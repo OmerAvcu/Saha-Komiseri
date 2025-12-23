@@ -6,7 +6,7 @@ import {
     saveSettings,
 } from '@/services/storage';
 import { Match, NewMatch, UpdateMatch } from '@/types/match';
-import { Settings } from '@/types/settings';
+import { CategoryRule, Settings } from '@/types/settings';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -31,6 +31,12 @@ interface AppContextType {
 
     // Settings operations
     updateSettings: (updates: Partial<Settings>) => Promise<void>;
+
+    // Category CRUD operations
+    addCategory: (category: Omit<CategoryRule, 'id'>) => Promise<CategoryRule>;
+    updateCategory: (id: string, updates: Partial<CategoryRule>) => Promise<void>;
+    deleteCategory: (id: string) => Promise<void>;
+    getCategoryById: (id: string) => CategoryRule | undefined;
 
     // Refresh data
     refreshData: () => Promise<void>;
@@ -164,6 +170,67 @@ export function AppProvider({ children }: AppProviderProps) {
         await saveSettings(updatedSettings);
     }, [settings]);
 
+    // ============ CATEGORY CRUD ============
+
+    const addCategory = useCallback(async (categoryData: Omit<CategoryRule, 'id'>): Promise<CategoryRule> => {
+        if (!settings) throw new Error('Settings not loaded');
+
+        const newCategory: CategoryRule = {
+            ...categoryData,
+            id: uuidv4(),
+        };
+
+        const updatedSettings: Settings = {
+            ...settings,
+            categories: [...settings.categories, newCategory],
+            lastUpdated: new Date().toISOString(),
+        };
+
+        setSettings(updatedSettings);
+        await saveSettings(updatedSettings);
+
+        return newCategory;
+    }, [settings]);
+
+    const updateCategory = useCallback(async (id: string, updates: Partial<CategoryRule>): Promise<void> => {
+        if (!settings) return;
+
+        const updatedCategories = settings.categories.map(category => {
+            if (category.id === id) {
+                return { ...category, ...updates };
+            }
+            return category;
+        });
+
+        const updatedSettings: Settings = {
+            ...settings,
+            categories: updatedCategories,
+            lastUpdated: new Date().toISOString(),
+        };
+
+        setSettings(updatedSettings);
+        await saveSettings(updatedSettings);
+    }, [settings]);
+
+    const deleteCategory = useCallback(async (id: string): Promise<void> => {
+        if (!settings) return;
+
+        const updatedCategories = settings.categories.filter(category => category.id !== id);
+
+        const updatedSettings: Settings = {
+            ...settings,
+            categories: updatedCategories,
+            lastUpdated: new Date().toISOString(),
+        };
+
+        setSettings(updatedSettings);
+        await saveSettings(updatedSettings);
+    }, [settings]);
+
+    const getCategoryById = useCallback((id: string): CategoryRule | undefined => {
+        return settings?.categories.find(category => category.id === id);
+    }, [settings]);
+
     // Context value
     const value: AppContextType = {
         matches,
@@ -178,6 +245,10 @@ export function AppProvider({ children }: AppProviderProps) {
         getLiveMatches,
         getCompletedMatches,
         updateSettings,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        getCategoryById,
         refreshData,
     };
 
@@ -199,3 +270,4 @@ export function useAppContext(): AppContextType {
 
 // Export context for testing purposes
 export { AppContext };
+

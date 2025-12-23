@@ -1,6 +1,8 @@
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 import React from 'react';
+import { Platform } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useColorScheme } from '@/components/useColorScheme';
@@ -16,6 +18,14 @@ function TabBarIcon(props: {
 export default function TabLayout() {
   const colorScheme = useColorScheme();
   const isDark = colorScheme === 'dark';
+  const insets = useSafeAreaInsets();
+
+  // Calculate safe bottom padding for Android gesture navigation
+  const bottomPadding = Platform.OS === 'android'
+    ? Math.max(insets.bottom, 10) + 5
+    : insets.bottom + 5;
+
+  const tabBarHeight = 60 + bottomPadding;
 
   return (
     <Tabs
@@ -25,13 +35,17 @@ export default function TabLayout() {
         tabBarStyle: {
           backgroundColor: isDark ? '#1f2937' : '#ffffff',
           borderTopColor: isDark ? '#374151' : '#e5e7eb',
-          paddingBottom: 5,
-          paddingTop: 5,
-          height: 60,
+          paddingBottom: bottomPadding,
+          paddingTop: 8,
+          height: tabBarHeight,
         },
         tabBarLabelStyle: {
           fontSize: 11,
           fontWeight: '600',
+          marginBottom: Platform.OS === 'android' ? 4 : 0,
+        },
+        tabBarIconStyle: {
+          marginTop: Platform.OS === 'android' ? 4 : 0,
         },
         headerStyle: {
           backgroundColor: '#1a73e8',
