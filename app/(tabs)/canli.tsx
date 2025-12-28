@@ -124,15 +124,16 @@ export default function CanliTakipScreen() {
         }
     };
 
-    const persistLiveMatch = async (running: boolean, elapsed: number) => {
-        if (!activeMatch) return;
+    const persistLiveMatch = async (running: boolean, elapsed: number, matchToSave?: Match) => {
+        const matchData = matchToSave || activeMatch;
+        if (!matchData) return;
         try {
             const state: LiveMatchState = {
-                matchId: activeMatch.id,
+                matchId: matchData.id,
                 startTime: running ? Date.now() : (matchStartTimeRef.current || Date.now()),
                 pausedAt: running ? 0 : elapsed,
                 isRunning: running,
-                match: activeMatch,
+                match: matchData,
             };
             await AsyncStorage.setItem(LIVE_MATCH_STORAGE_KEY, JSON.stringify(state));
         } catch (error) {
@@ -186,12 +187,14 @@ export default function CanliTakipScreen() {
 
     // Start match
     const handleStartMatch = (match: Match) => {
-        setActiveMatch({ ...match, status: 'live', homeScore: 0, awayScore: 0, events: [] });
+        const newMatch = { ...match, status: 'live' as const, homeScore: 0, awayScore: 0, events: [] };
+        setActiveMatch(newMatch);
         setElapsedSeconds(0);
         matchStartTimeRef.current = null;
         pausedSecondsRef.current = 0;
         setIsRunning(false);
-        persistLiveMatch(false, 0);
+        // Pass the new match directly to avoid race condition
+        persistLiveMatch(false, 0, newMatch);
     };
 
     // Toggle stopwatch
