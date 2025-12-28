@@ -1,9 +1,10 @@
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, ScrollView, Share, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Card, Chip, Surface, Text, TextInput } from 'react-native-paper';
+import { FlatList, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Card, Chip, Surface, Text, TextInput } from 'react-native-paper';
 
 // Generate match report text for sharing
 function generateMatchReport(match: Match): string {
@@ -90,95 +91,84 @@ async function handleShareMatch(match: Match) {
     }
 }
 
-function ResultCard({ match }: { match: Match }) {
+function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
     const homeWin = match.homeScore > match.awayScore;
     const awayWin = match.awayScore > match.homeScore;
     const isDraw = match.homeScore === match.awayScore;
 
     return (
-        <Card style={styles.card} mode="elevated">
-            <Card.Content>
-                <View style={styles.leagueRow}>
-                    <Chip
-                        icon="trophy"
-                        mode="outlined"
-                        compact
-                        textStyle={styles.chipText}
-                        style={styles.leagueChip}
-                    >
-                        {match.league}
-                    </Chip>
-                    <Chip
-                        icon="check-circle"
-                        mode="flat"
-                        compact
-                        textStyle={styles.completedChipText}
-                        style={styles.completedChip}
-                    >
-                        Tamamlandı
-                    </Chip>
-                </View>
-
-                <View style={styles.resultContainer}>
-                    <View style={styles.teamResult}>
-                        <MaterialCommunityIcons
-                            name="shield"
-                            size={32}
-                            color={homeWin ? '#10b981' : '#9ca3af'}
-                        />
-                        <Text style={[
-                            styles.teamName,
-                            homeWin && styles.winnerTeam,
-                        ]}>
-                            {match.homeTeam}
-                        </Text>
+        <TouchableOpacity onPress={onPress} activeOpacity={0.7}>
+            <Card style={styles.card} mode="elevated">
+                <Card.Content>
+                    <View style={styles.leagueRow}>
+                        <Chip
+                            icon="trophy"
+                            mode="outlined"
+                            compact
+                            textStyle={styles.chipText}
+                            style={styles.leagueChip}
+                        >
+                            {match.league}
+                        </Chip>
+                        <Chip
+                            icon="check-circle"
+                            mode="flat"
+                            compact
+                            textStyle={styles.completedChipText}
+                            style={styles.completedChip}
+                        >
+                            Tamamlandı
+                        </Chip>
                     </View>
 
-                    <View style={styles.scoreContainer}>
-                        <Text style={styles.scoreText}>
-                            {match.homeScore} - {match.awayScore}
-                        </Text>
-                        {isDraw && <Text style={styles.drawText}>Berabere</Text>}
+                    <View style={styles.scoreBoard}>
+                        <View style={styles.teamSection}>
+                            <MaterialCommunityIcons name="shield" size={24} color="#1a73e8" />
+                            <Text style={[styles.teamName, homeWin && styles.winnerText]} numberOfLines={2}>
+                                {match.homeTeam}
+                            </Text>
+                        </View>
+
+                        <View style={styles.scoreSection}>
+                            <View style={styles.scoreContainer}>
+                                <Text style={[styles.score, homeWin && styles.winnerScore]}>
+                                    {match.homeScore}
+                                </Text>
+                                <Text style={styles.scoreSeparator}>-</Text>
+                                <Text style={[styles.score, awayWin && styles.winnerScore]}>
+                                    {match.awayScore}
+                                </Text>
+                            </View>
+                            {isDraw && <Text style={styles.drawText}>Berabere</Text>}
+                        </View>
+
+                        <View style={styles.teamSection}>
+                            <MaterialCommunityIcons name="shield" size={24} color="#1a73e8" />
+                            <Text style={[styles.teamName, awayWin && styles.winnerText]} numberOfLines={2}>
+                                {match.awayTeam}
+                            </Text>
+                        </View>
                     </View>
 
-                    <View style={styles.teamResult}>
-                        <MaterialCommunityIcons
-                            name="shield"
-                            size={32}
-                            color={awayWin ? '#10b981' : '#9ca3af'}
-                        />
-                        <Text style={[
-                            styles.teamName,
-                            awayWin && styles.winnerTeam,
-                        ]}>
-                            {match.awayTeam}
-                        </Text>
+                    <View style={styles.matchInfo}>
+                        <View style={styles.infoItem}>
+                            <MaterialCommunityIcons name="calendar" size={14} color="#6b7280" />
+                            <Text style={styles.infoText}>{match.date}</Text>
+                        </View>
+                        <View style={styles.infoItem}>
+                            <MaterialCommunityIcons name="map-marker" size={14} color="#6b7280" />
+                            <Text style={styles.infoText}>{match.venue}</Text>
+                        </View>
                     </View>
-                </View>
 
-                <View style={styles.infoRow}>
-                    <View style={styles.infoItem}>
-                        <MaterialCommunityIcons name="calendar" size={14} color="#6b7280" />
-                        <Text style={styles.infoText}>{match.date}</Text>
+                    {/* View Details Hint */}
+                    <View style={styles.detailHint}>
+                        <Text style={styles.detailHintText}>Detaylar için dokun</Text>
+                        <MaterialCommunityIcons name="chevron-right" size={16} color="#9ca3af" />
                     </View>
-                    <View style={styles.infoItem}>
-                        <MaterialCommunityIcons name="map-marker" size={14} color="#6b7280" />
-                        <Text style={styles.infoText}>{match.venue}</Text>
-                    </View>
-                </View>
-
-                {/* Share Button */}
-                <Button
-                    mode="contained"
-                    onPress={() => handleShareMatch(match)}
-                    icon="share-variant"
-                    style={styles.shareButton}
-                    labelStyle={styles.shareButtonLabel}
-                >
-                    Raporu Paylaş
-                </Button>
-            </Card.Content>
-        </Card>
+                </Card.Content>
+            </Card>
+        </TouchableOpacity>
     );
 }
 
@@ -195,11 +185,16 @@ function EmptyState() {
 }
 
 export default function SonuclarScreen() {
+    const router = useRouter();
     const { getCompletedMatches, settings, isLoading } = useAppContext();
     const completedMatches = getCompletedMatches();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+    const handleViewDetail = (matchId: string) => {
+        router.push({ pathname: '/match-detail' as any, params: { matchId } });
+    };
 
     // Get unique categories from completed matches
     const categories = useMemo(() => {
@@ -295,7 +290,9 @@ export default function SonuclarScreen() {
             <FlatList
                 data={filteredMatches}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => <ResultCard match={item} />}
+                renderItem={({ item }) => (
+                    <ResultCard match={item} onPress={() => handleViewDetail(item.id)} />
+                )}
                 contentContainerStyle={[
                     styles.listContent,
                     filteredMatches.length === 0 && styles.emptyListContent
@@ -463,5 +460,58 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6b7280',
         marginTop: 8,
+    },
+    // New styles for updated ResultCard
+    scoreBoard: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginVertical: 12,
+        paddingHorizontal: 8,
+    },
+    teamSection: {
+        flex: 1,
+        alignItems: 'center',
+    },
+    winnerText: {
+        color: '#10b981',
+        fontWeight: 'bold',
+    },
+    scoreSection: {
+        alignItems: 'center',
+        paddingHorizontal: 12,
+    },
+    score: {
+        fontSize: 28,
+        fontWeight: 'bold',
+        color: '#1f2937',
+    },
+    winnerScore: {
+        color: '#10b981',
+    },
+    scoreSeparator: {
+        fontSize: 20,
+        color: '#9ca3af',
+        marginHorizontal: 8,
+    },
+    matchInfo: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        gap: 16,
+        marginTop: 12,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#e5e7eb',
+    },
+    detailHint: {
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        marginTop: 12,
+        paddingTop: 8,
+    },
+    detailHintText: {
+        fontSize: 12,
+        color: '#9ca3af',
     },
 });
