@@ -8,9 +8,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AyarlarScreen() {
     const router = useRouter();
-    const { settings, exportData, importData, clearAllData } = useAppContext();
+    const { settings, exportData, importData, clearAllData, updateSettings } = useAppContext();
     const [darkMode, setDarkMode] = React.useState(false);
-    const [notifications, setNotifications] = React.useState(true);
 
     const categoryCount = settings?.categories?.length || 0;
 
@@ -58,48 +57,7 @@ export default function AyarlarScreen() {
 
                 </Surface>
 
-                {/* Kurallar */}
-                <Surface style={styles.section} elevation={1}>
-                    <Text style={styles.sectionTitle}>Kurallar</Text>
-                    <List.Item
-                        title="Oyun Kuralları"
-                        titleStyle={styles.listTitle}
-                        description="FIFA Oyun Kuralları 2024"
-                        descriptionStyle={styles.listDescription}
-                        left={(props) => (
-                            <List.Icon {...props} icon="book-open-variant" color="#1a73e8" />
-                        )}
-                        right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
-                        )}
-                    />
-                    <Divider />
-                    <List.Item
-                        title="Disiplin Talimatları"
-                        titleStyle={styles.listTitle}
-                        description="Sarı/Kırmızı kart kuralları"
-                        descriptionStyle={styles.listDescription}
-                        left={(props) => (
-                            <List.Icon {...props} icon="card-bulleted" color="#1a73e8" />
-                        )}
-                        right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
-                        )}
-                    />
-                    <Divider />
-                    <List.Item
-                        title="VAR Protokolü"
-                        titleStyle={styles.listTitle}
-                        description="Video yardımcı hakem kuralları"
-                        descriptionStyle={styles.listDescription}
-                        left={(props) => (
-                            <List.Icon {...props} icon="video" color="#1a73e8" />
-                        )}
-                        right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
-                        )}
-                    />
-                </Surface>
+
 
                 {/* Uygulama Ayarları */}
                 <Surface style={styles.section} elevation={1}>
@@ -131,8 +89,8 @@ export default function AyarlarScreen() {
                         )}
                         right={() => (
                             <Switch
-                                value={notifications}
-                                onValueChange={setNotifications}
+                                value={settings?.notificationsEnabled ?? true}
+                                onValueChange={(val) => updateSettings({ notificationsEnabled: val })}
                                 color="#1a73e8"
                             />
                         )}

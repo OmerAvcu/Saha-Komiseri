@@ -24,6 +24,7 @@ export interface Settings {
     categories: CategoryRule[];
     leagues: string[];
     defaultCategory: string; // category id
+    notificationsEnabled: boolean;
     appVersion: string;
     lastUpdated: string;
 }
@@ -80,6 +81,7 @@ export const DEFAULT_SETTINGS: Settings = {
     categories: DEFAULT_CATEGORIES,
     leagues: DEFAULT_LEAGUES,
     defaultCategory: 'u19',
+    notificationsEnabled: true,
     appVersion: '1.0.0',
     lastUpdated: new Date().toISOString(),
 };

@@ -12,6 +12,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as FileSystem from 'expo-file-system/legacy';
 // @ts-ignore
+import * as Notifications from 'expo-notifications';
 import * as Sharing from 'expo-sharing';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
 import { Alert, Platform } from 'react-native';
@@ -52,6 +53,9 @@ interface AppContextType {
     exportData: () => Promise<void>;
     importData: () => Promise<boolean>;
     clearAllData: () => Promise<void>;
+
+    // Notifications
+    scheduleMatchNotification: (match: Match) => Promise<void>;
 }
 
 // Create context with undefined default
@@ -72,7 +76,36 @@ export function AppProvider({ children }: AppProviderProps) {
     // Initialize data on mount
     useEffect(() => {
         initializeData();
+        setupNotifications();
     }, []);
+
+    const setupNotifications = async () => {
+        if (Platform.OS === 'android') {
+            await Notifications.setNotificationChannelAsync('match-reminders', {
+                name: 'Maç Hatırlatıcıları',
+                importance: Notifications.AndroidImportance.HIGH,
+                vibrationPattern: [0, 250, 250, 250],
+                lightColor: '#FF231F7C',
+            });
+        }
+
+        const { status: existingStatus } = await Notifications.getPermissionsAsync();
+        let finalStatus = existingStatus;
+        if (existingStatus !== 'granted') {
+            const { status } = await Notifications.requestPermissionsAsync();
+            finalStatus = status;
+        }
+    };
+
+    Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+            shouldShowAlert: true,
+            shouldPlaySound: true,
+            shouldSetBadge: false,
+            shouldShowBanner: true,
+            shouldShowList: true,
+        }),
+    });
 
     const initializeData = async () => {
         try {
@@ -425,6 +458,46 @@ export function AppProvider({ children }: AppProviderProps) {
         });
     }, []);
 
+    // Schedule notification for a match
+    const scheduleMatchNotification = useCallback(async (match: Match) => {
+        if (!settings?.notificationsEnabled) return;
+
+        try {
+            // Parse match date and time
+            // match.date format: YYYY-MM-DD
+            // match.time format: HH:mm
+            const dateParts = match.date.split('-').map(Number);
+            const timeParts = match.time.split(':').map(Number);
+
+            if (dateParts.length !== 3 || timeParts.length < 2) return;
+
+            const matchDate = new Date(dateParts[0], dateParts[1] - 1, dateParts[2], timeParts[0], timeParts[1]);
+
+            // Trigger 1 hour (60 minutes) before
+            const triggerDate = new Date(matchDate.getTime() - 60 * 60 * 1000);
+            const now = new Date();
+
+            if (triggerDate > now) {
+                const seconds = Math.floor((triggerDate.getTime() - now.getTime()) / 1000);
+                await Notifications.scheduleNotificationAsync({
+                    content: {
+                        title: 'Maç Saati Yaklaşıyor! ⚽',
+                        body: `${match.homeTeam} vs ${match.awayTeam} maçı 1 saat sonra başlayacak.`,
+                        data: { matchId: match.id },
+                    },
+                    trigger: {
+                        type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
+                        seconds,
+                        repeats: false,
+                    },
+                });
+                console.log(`Notification scheduled for ${triggerDate.toISOString()} (${seconds} seconds)`);
+            }
+        } catch (error) {
+            console.error('Error scheduling notification:', error);
+        }
+    }, [settings]);
+
     // Context value
     const value: AppContextType = React.useMemo(() => ({
         matches,
@@ -447,6 +520,7 @@ export function AppProvider({ children }: AppProviderProps) {
         exportData,
         importData,
         clearAllData,
+        scheduleMatchNotification,
     }), [
         matches,
         settings,
@@ -467,7 +541,8 @@ export function AppProvider({ children }: AppProviderProps) {
         refreshData,
         exportData,
         importData,
-        clearAllData
+        clearAllData,
+        scheduleMatchNotification
     ]);
 
     return (

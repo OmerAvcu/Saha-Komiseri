@@ -15,7 +15,7 @@ import {
 export default function MatchFormScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ matchId?: string }>();
-    const { settings, addMatch, updateMatch, getMatchById, isLoading } = useAppContext();
+    const { settings, addMatch, updateMatch, getMatchById, isLoading, scheduleMatchNotification } = useAppContext();
 
     const isEditMode = !!params.matchId;
     const existingMatch = isEditMode ? getMatchById(params.matchId!) : null;
@@ -156,11 +156,17 @@ export default function MatchFormScreen() {
 
             if (isEditMode && params.matchId) {
                 await updateMatch(params.matchId, matchData);
+                // Reschedule notification
+                await scheduleMatchNotification({ ...existingMatch, ...matchData, id: params.matchId } as any);
+
                 Alert.alert('Başarılı', 'Maç başarıyla güncellendi', [
                     { text: 'Tamam', onPress: () => router.back() }
                 ]);
             } else {
-                await addMatch(matchData);
+                const newMatch = await addMatch(matchData);
+                // Schedule notification
+                await scheduleMatchNotification(newMatch);
+
                 Alert.alert('Başarılı', 'Maç başarıyla eklendi', [
                     { text: 'Tamam', onPress: () => router.back() }
                 ]);
