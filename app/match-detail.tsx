@@ -3,7 +3,7 @@ import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
 
 // Generate match report text for sharing
@@ -280,30 +280,45 @@ export default function MatchDetailScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6b7280',
+        color: '#6B7280',
     },
     errorText: {
         marginTop: 12,
         marginBottom: 20,
         fontSize: 18,
-        color: '#ef4444',
+        fontWeight: '600',
+        color: '#EF4444',
     },
     scoreHeader: {
-        margin: 16,
-        padding: 20,
-        borderRadius: 16,
-        backgroundColor: '#ffffff',
+        marginHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 12,
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+        borderRadius: 20,
+        backgroundColor: '#2962FF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#2962FF',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 8,
+            },
+        }),
     },
     teamsRow: {
         flexDirection: 'row',
@@ -315,11 +330,11 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     teamName: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
-        color: '#1f2937',
+        color: 'rgba(255,255,255,0.85)',
         textAlign: 'center',
-        marginTop: 8,
+        marginTop: 10,
     },
     scoreContainer: {
         alignItems: 'center',
@@ -330,23 +345,25 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     scoreText: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#1a73e8',
+        fontSize: 56,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     scoreSeparator: {
-        fontSize: 36,
-        fontWeight: 'bold',
-        color: '#9ca3af',
+        fontSize: 32,
+        fontWeight: '700',
+        color: 'rgba(255,255,255,0.5)',
         marginHorizontal: 12,
     },
     completedChip: {
-        marginTop: 8,
-        backgroundColor: '#dcfce7',
+        marginTop: 12,
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
     },
     completedChipText: {
-        fontSize: 12,
-        color: '#10b981',
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     categoryRow: {
         flexDirection: 'row',
@@ -355,115 +372,147 @@ const styles = StyleSheet.create({
         marginTop: 16,
     },
     categoryChip: {
-        backgroundColor: '#e8f0fe',
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
     },
     card: {
         marginHorizontal: 16,
         marginBottom: 12,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     cardTitle: {
         fontSize: 16,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontWeight: '700',
+        color: '#121212',
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: '#F3F4F6',
     },
     infoLabel: {
         fontSize: 14,
-        color: '#6b7280',
-        marginLeft: 8,
+        color: '#6B7280',
+        marginLeft: 10,
         flex: 1,
     },
     infoValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1f2937',
+        color: '#121212',
     },
     refLabel: {
         fontSize: 14,
-        color: '#6b7280',
+        color: '#6B7280',
         flex: 1,
     },
     refValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1f2937',
+        color: '#121212',
     },
+    // Timeline Event Row
     eventRow: {
         flexDirection: 'row',
-        alignItems: 'center',
-        paddingVertical: 12,
-        borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        alignItems: 'flex-start',
+        paddingVertical: 14,
+        marginLeft: 20,
+        borderLeftWidth: 2,
+        borderLeftColor: '#E5E7EB',
+        paddingLeft: 20,
     },
     eventMinute: {
-        width: 40,
+        position: 'absolute',
+        left: -11,
+        width: 22,
+        height: 22,
+        borderRadius: 11,
+        backgroundColor: '#2962FF',
+        justifyContent: 'center',
         alignItems: 'center',
     },
     eventMinuteText: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#1a73e8',
+        fontSize: 10,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     eventIcon: {
-        width: 36,
-        height: 36,
-        borderRadius: 18,
+        width: 40,
+        height: 40,
+        borderRadius: 12,
         justifyContent: 'center',
         alignItems: 'center',
-        marginHorizontal: 8,
+        marginRight: 12,
     },
     eventDetails: {
         flex: 1,
     },
     eventLabel: {
         fontSize: 14,
-        fontWeight: '600',
-        color: '#1f2937',
+        fontWeight: '700',
+        color: '#121212',
     },
     eventPlayer: {
         fontSize: 13,
-        color: '#4b5563',
-        marginTop: 2,
+        color: '#4B5563',
+        marginTop: 3,
     },
     eventSubstitution: {
         fontSize: 12,
-        color: '#6b7280',
-        marginTop: 2,
+        color: '#6B7280',
+        marginTop: 3,
     },
     eventTeam: {
         fontSize: 12,
-        color: '#9ca3af',
-        marginTop: 2,
+        color: '#9CA3AF',
+        marginTop: 3,
     },
     noEventsContainer: {
         alignItems: 'center',
-        paddingVertical: 24,
+        paddingVertical: 32,
     },
     noEventsText: {
-        marginTop: 12,
+        marginTop: 14,
         fontSize: 14,
-        color: '#6b7280',
+        color: '#6B7280',
         textAlign: 'center',
     },
     shareButton: {
         marginHorizontal: 16,
         marginTop: 8,
         backgroundColor: '#25D366',
-        borderRadius: 8,
+        borderRadius: 16,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#25D366',
+                shadowOffset: { width: 0, height: 4 },
+                shadowOpacity: 0.3,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 4,
+            },
+        }),
     },
     shareButtonLabel: {
         fontSize: 16,
-        fontWeight: '600',
+        fontWeight: '700',
     },
     bottomSpacer: {
-        height: 32,
+        height: 40,
     },
 });

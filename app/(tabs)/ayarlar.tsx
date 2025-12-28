@@ -2,8 +2,9 @@ import { useAppContext } from '@/context/AppContext';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import { Divider, List, Surface, Switch, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AyarlarScreen() {
     const router = useRouter();
@@ -14,10 +15,15 @@ export default function AyarlarScreen() {
     const categoryCount = settings?.categories?.length || 0;
 
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            {/* Header */}
+            <Surface style={styles.headerSurface} elevation={0}>
+                <Text style={styles.headerTitle}>Ayarlar</Text>
+            </Surface>
+
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Kategori Yönetimi */}
-                <Surface style={styles.section} elevation={1}>
+                <Surface style={styles.section} elevation={0}>
                     <Text style={styles.sectionTitle}>Kategori Yönetimi</Text>
                     <List.Item
                         title="Kategoriler"
@@ -150,7 +156,7 @@ export default function AyarlarScreen() {
                         description="Saha Komiseri v1.0.0"
                         descriptionStyle={styles.listDescription}
                         left={(props) => (
-                            <List.Icon {...props} icon="information-outline" color="#1a73e8" />
+                            <List.Icon {...props} icon="information-outline" color="#2962FF" />
                         )}
                         right={() => (
                             <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
@@ -158,40 +164,51 @@ export default function AyarlarScreen() {
                     />
                 </Surface>
             </ScrollView>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     section: {
         marginVertical: 8,
         marginHorizontal: 16,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
         overflow: 'hidden',
     },
     sectionTitle: {
-        fontSize: 14,
-        fontWeight: 'bold',
-        color: '#1a73e8',
+        fontSize: 12,
+        fontWeight: '700',
+        color: '#2962FF',
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 8,
         textTransform: 'uppercase',
-        letterSpacing: 1,
+        letterSpacing: 1.5,
     },
     listTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1f2937',
+        color: '#121212',
     },
     listDescription: {
         fontSize: 13,
-        color: '#4a4a4a',
-        marginTop: 2,
+        color: '#6B7280',
+        marginTop: 3,
+    },
+    headerSurface: {
+        paddingHorizontal: 20,
+        paddingTop: 16,
+        paddingBottom: 12,
+        backgroundColor: '#2962FF',
+    },
+    headerTitle: {
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
 });

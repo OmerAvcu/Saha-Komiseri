@@ -3,7 +3,7 @@ import { Match, MatchEvent, MatchEventType } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, AppState, FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, FlatList, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
     Button,
@@ -15,6 +15,7 @@ import {
     Text,
     TextInput,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { v4 as uuidv4 } from 'uuid';
 
 // Storage keys
@@ -384,8 +385,8 @@ export default function CanliTakipScreen() {
         const availableMatches = [...scheduledMatches, ...liveMatches];
 
         return (
-            <View style={styles.container}>
-                <Surface style={styles.headerSurface} elevation={1}>
+            <SafeAreaView style={styles.container} edges={['top']}>
+                <Surface style={styles.headerSurface} elevation={0}>
                     <Text style={styles.headerTitle}>Canlı Takip</Text>
                     <Text style={styles.headerSubtitle}>
                         Takip etmek istediğiniz maçı seçin
@@ -431,13 +432,13 @@ export default function CanliTakipScreen() {
                         )}
                     />
                 )}
-            </View>
+            </SafeAreaView>
         );
     }
 
     // Live match view
     return (
-        <View style={styles.container}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Scoreboard */}
             <Surface style={styles.scoreboard} elevation={2}>
                 <View style={styles.teamSection}>
@@ -676,164 +677,208 @@ export default function CanliTakipScreen() {
                     </View>
                 </Modal>
             </Portal>
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6b7280',
+        color: '#6B7280',
     },
     headerSurface: {
-        padding: 16,
-        backgroundColor: '#ffffff',
-        marginBottom: 8,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 16,
+        backgroundColor: '#2962FF',
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.8)',
         marginTop: 4,
     },
     listContent: {
         paddingHorizontal: 16,
+        paddingTop: 16,
         paddingBottom: 20,
     },
     matchCard: {
-        marginVertical: 8,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        marginBottom: 12,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     matchInfo: {
-        marginBottom: 8,
+        marginBottom: 12,
     },
     matchTeams: {
-        fontSize: 16,
-        fontWeight: '600',
-        color: '#1f2937',
+        fontSize: 17,
+        fontWeight: '700',
+        color: '#121212',
     },
     matchDetails: {
         fontSize: 13,
-        color: '#6b7280',
-        marginTop: 4,
+        color: '#6B7280',
+        marginTop: 6,
+        fontWeight: '500',
     },
     startButton: {
-        backgroundColor: '#1a73e8',
+        backgroundColor: '#2962FF',
         flex: 1,
         marginHorizontal: 8,
+        borderRadius: 12,
     },
     emptyContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        paddingHorizontal: 24,
+        paddingHorizontal: 32,
     },
     emptyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#1f2937',
-        marginTop: 16,
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#121212',
+        marginTop: 20,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: '#6b7280',
+        fontSize: 15,
+        color: '#6B7280',
         textAlign: 'center',
         marginTop: 8,
+        lineHeight: 22,
     },
-    // Scoreboard
+    // TV-Style Scoreboard
     scoreboard: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         alignItems: 'center',
-        padding: 16,
-        margin: 16,
-        marginBottom: 8,
-        borderRadius: 16,
-        backgroundColor: '#1a73e8',
+        paddingVertical: 24,
+        paddingHorizontal: 20,
+        marginHorizontal: 16,
+        marginTop: 16,
+        marginBottom: 12,
+        borderRadius: 20,
+        backgroundColor: '#2962FF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#2962FF',
+                shadowOffset: { width: 0, height: 6 },
+                shadowOpacity: 0.35,
+                shadowRadius: 12,
+            },
+            android: {
+                elevation: 8,
+            },
+        }),
     },
     teamSection: {
         flex: 1,
         alignItems: 'center',
     },
     teamName: {
-        fontSize: 14,
+        fontSize: 13,
         fontWeight: '600',
-        color: '#ffffff',
+        color: 'rgba(255,255,255,0.85)',
         textAlign: 'center',
-        marginBottom: 8,
+        marginBottom: 10,
     },
     score: {
-        fontSize: 48,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        fontSize: 56,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     centerSection: {
         alignItems: 'center',
         paddingHorizontal: 16,
     },
     stopwatch: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#ffffff',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#FFFFFF',
         fontFamily: 'monospace',
+        letterSpacing: 2,
     },
     statusChip: {
-        marginTop: 8,
+        marginTop: 10,
         backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
     },
     liveChip: {
-        backgroundColor: '#ef4444',
+        backgroundColor: '#EF4444',
     },
     statusChipText: {
-        color: '#ffffff',
-        fontSize: 12,
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontSize: 11,
+        fontWeight: '700',
+        letterSpacing: 1,
     },
     // Controls
     controlRow: {
         flexDirection: 'row',
         justifyContent: 'space-between',
         paddingHorizontal: 16,
-        marginBottom: 8,
+        marginBottom: 12,
         gap: 12,
     },
     controlButton: {
         flex: 1,
+        borderRadius: 12,
     },
     backButton: {
         flex: 0.8,
     },
-    // Actions
+    // Actions Grid
     actionsContainer: {
-        margin: 16,
-        marginTop: 8,
-        marginBottom: 8,
+        marginHorizontal: 16,
+        marginBottom: 12,
         padding: 16,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     actionsTitle: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#6b7280',
-        marginBottom: 12,
-        letterSpacing: 1,
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#6B7280',
+        marginBottom: 14,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
     },
     actionsGrid: {
         flexDirection: 'row',
@@ -842,77 +887,99 @@ const styles = StyleSheet.create({
     },
     actionButton: {
         width: '48%',
-        height: 70,
+        height: 80,
         marginBottom: 12,
-        borderRadius: 12,
+        borderRadius: 16,
         alignItems: 'center',
         justifyContent: 'center',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 4,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     goalButton: {
-        backgroundColor: '#d1fae5',
+        backgroundColor: '#D1FAE5',
     },
     yellowButton: {
-        backgroundColor: '#fef3c7',
+        backgroundColor: '#FEF3C7',
     },
     redButton: {
-        backgroundColor: '#fee2e2',
+        backgroundColor: '#FEE2E2',
     },
     subButton: {
-        backgroundColor: '#dbeafe',
+        backgroundColor: '#DBEAFE',
     },
     actionIcon: {
-        fontSize: 28,
-        marginBottom: 4,
+        fontSize: 32,
+        marginBottom: 6,
     },
     actionLabel: {
         fontSize: 12,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontWeight: '700',
+        color: '#121212',
     },
     // Event log
     eventLogContainer: {
         flex: 1,
-        margin: 16,
-        marginTop: 8,
+        marginHorizontal: 16,
         marginBottom: 16,
         padding: 16,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.06,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 2,
+            },
+        }),
     },
     eventLogTitle: {
-        fontSize: 12,
-        fontWeight: 'bold',
-        color: '#6b7280',
-        marginBottom: 12,
-        letterSpacing: 1,
+        fontSize: 11,
+        fontWeight: '700',
+        color: '#6B7280',
+        marginBottom: 14,
+        letterSpacing: 1.5,
+        textTransform: 'uppercase',
     },
     eventLogScroll: {
         flex: 1,
     },
     noEventsText: {
         fontSize: 14,
-        color: '#9ca3af',
+        color: '#9CA3AF',
         textAlign: 'center',
-        paddingVertical: 20,
+        paddingVertical: 24,
     },
     eventItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        paddingVertical: 8,
+        paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#f3f4f6',
+        borderBottomColor: '#F3F4F6',
     },
     eventMinute: {
-        width: 40,
-        height: 40,
-        borderRadius: 20,
+        width: 42,
+        height: 42,
+        borderRadius: 21,
         justifyContent: 'center',
         alignItems: 'center',
-        marginRight: 12,
+        marginRight: 14,
     },
     eventMinuteText: {
-        color: '#ffffff',
-        fontWeight: 'bold',
+        color: '#FFFFFF',
+        fontWeight: '700',
         fontSize: 12,
     },
     eventDetails: {
@@ -921,74 +988,78 @@ const styles = StyleSheet.create({
     eventLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#1f2937',
+        color: '#121212',
     },
     eventInfo: {
         fontSize: 12,
-        color: '#6b7280',
-        marginTop: 2,
+        color: '#6B7280',
+        marginTop: 3,
     },
     // Modal
     modalContainer: {
-        backgroundColor: '#ffffff',
+        backgroundColor: '#FFFFFF',
         margin: 20,
-        padding: 20,
-        borderRadius: 12,
+        padding: 24,
+        borderRadius: 20,
     },
     modalTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1f2937',
-        marginBottom: 16,
+        fontSize: 22,
+        fontWeight: '700',
+        color: '#121212',
+        marginBottom: 20,
     },
     input: {
-        marginBottom: 12,
-        backgroundColor: '#f9f9f9',
+        marginBottom: 14,
+        backgroundColor: '#F5F7FA',
+        borderRadius: 12,
     },
     teamSelectLabel: {
         fontSize: 12,
-        color: '#666666',
-        marginBottom: 8,
+        fontWeight: '600',
+        color: '#6B7280',
+        marginBottom: 10,
         marginLeft: 4,
     },
     teamSelectRow: {
         flexDirection: 'row',
         gap: 12,
-        marginBottom: 12,
+        marginBottom: 16,
     },
     teamSelectButton: {
         flex: 1,
-        paddingVertical: 12,
+        paddingVertical: 14,
         paddingHorizontal: 8,
-        borderRadius: 8,
-        borderWidth: 1,
-        borderColor: '#cccccc',
-        backgroundColor: '#f9f9f9',
+        borderRadius: 12,
+        borderWidth: 2,
+        borderColor: '#E5E7EB',
+        backgroundColor: '#F5F7FA',
         alignItems: 'center',
     },
     teamSelectActive: {
-        borderColor: '#1a73e8',
-        backgroundColor: '#e8f0fe',
+        borderColor: '#2962FF',
+        backgroundColor: '#E8F0FE',
     },
     teamSelectText: {
         fontSize: 14,
-        color: '#4a4a4a',
+        fontWeight: '500',
+        color: '#6B7280',
         textAlign: 'center',
     },
     teamSelectTextActive: {
-        color: '#1a73e8',
-        fontWeight: '600',
+        color: '#2962FF',
+        fontWeight: '700',
     },
     modalActions: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
         gap: 12,
-        marginTop: 8,
+        marginTop: 12,
     },
     modalButton: {
         minWidth: 100,
+        borderRadius: 12,
     },
     saveButton: {
-        backgroundColor: '#1a73e8',
+        backgroundColor: '#2962FF',
     },
 });

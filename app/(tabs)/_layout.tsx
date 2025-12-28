@@ -4,7 +4,6 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useClientOnlyValue } from '@/components/useClientOnlyValue';
 import { useColorScheme } from '@/components/useColorScheme';
 import Colors from '@/constants/Colors';
 
@@ -47,14 +46,7 @@ export default function TabLayout() {
         tabBarIconStyle: {
           marginTop: Platform.OS === 'android' ? 4 : 0,
         },
-        headerStyle: {
-          backgroundColor: '#1a73e8',
-        },
-        headerTintColor: '#ffffff',
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-        headerShown: useClientOnlyValue(false, true),
+        headerShown: false,
       }}>
       <Tabs.Screen
         name="index"

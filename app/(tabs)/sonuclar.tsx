@@ -3,8 +3,9 @@ import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { FlatList, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { FlatList, Platform, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ActivityIndicator, Card, Chip, Surface, Text, TextInput } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Generate match report text for sharing
 function generateMatchReport(match: Match): string {
@@ -233,8 +234,8 @@ export default function SonuclarScreen() {
     }
 
     return (
-        <View style={styles.container}>
-            <Surface style={styles.headerSurface} elevation={1}>
+        <SafeAreaView style={styles.container} edges={['top']}>
+            <Surface style={styles.headerSurface} elevation={0}>
                 <Text style={styles.headerTitle}>Maç Sonuçları</Text>
                 <Text style={styles.headerSubtitle}>
                     {filteredMatches.length > 0
@@ -300,44 +301,46 @@ export default function SonuclarScreen() {
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={<EmptyState />}
             />
-        </View>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: '#F5F7FA',
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6b7280',
+        color: '#6B7280',
     },
     headerSurface: {
-        padding: 16,
-        backgroundColor: '#ffffff',
-        marginBottom: 8,
+        paddingHorizontal: 20,
+        paddingTop: 20,
+        paddingBottom: 16,
+        backgroundColor: '#2962FF',
     },
     headerTitle: {
-        fontSize: 20,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontSize: 24,
+        fontWeight: '700',
+        color: '#FFFFFF',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: 'rgba(255,255,255,0.8)',
         marginTop: 4,
     },
     searchInput: {
         marginTop: 12,
-        backgroundColor: '#ffffff',
+        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
     },
     filterScrollView: {
         marginTop: 12,
@@ -346,13 +349,16 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     filterChip: {
-        backgroundColor: '#e8f0fe',
+        backgroundColor: 'rgba(255,255,255,0.2)',
+        borderRadius: 20,
     },
     filterChipText: {
         fontSize: 12,
+        color: '#FFFFFF',
     },
     listContent: {
         paddingHorizontal: 16,
+        paddingTop: 16,
         paddingBottom: 20,
     },
     emptyListContent: {
@@ -360,9 +366,20 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
     },
     card: {
-        marginVertical: 8,
-        borderRadius: 12,
-        backgroundColor: '#ffffff',
+        marginBottom: 12,
+        borderRadius: 16,
+        backgroundColor: '#FFFFFF',
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: 2 },
+                shadowOpacity: 0.08,
+                shadowRadius: 8,
+            },
+            android: {
+                elevation: 3,
+            },
+        }),
     },
     leagueRow: {
         flexDirection: 'row',
@@ -370,17 +387,21 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     leagueChip: {
-        backgroundColor: '#e8f0fe',
+        backgroundColor: '#E8F0FE',
+        borderRadius: 20,
     },
     completedChip: {
-        backgroundColor: '#d1fae5',
+        backgroundColor: '#D1FAE5',
+        borderRadius: 20,
     },
     chipText: {
         fontSize: 11,
+        fontWeight: '600',
     },
     completedChipText: {
         fontSize: 11,
-        color: '#10b981',
+        fontWeight: '600',
+        color: '#10B981',
     },
     resultContainer: {
         flexDirection: 'row',
@@ -394,53 +415,55 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     teamName: {
-        fontSize: 13,
-        fontWeight: '500',
-        color: '#6b7280',
+        fontSize: 15,
+        fontWeight: '700',
+        color: '#121212',
         textAlign: 'center',
-        marginTop: 6,
+        marginTop: 8,
     },
     winnerTeam: {
-        color: '#10b981',
-        fontWeight: 'bold',
+        color: '#10B981',
+        fontWeight: '700',
     },
     scoreContainer: {
+        flexDirection: 'row',
         alignItems: 'center',
         paddingHorizontal: 16,
     },
     scoreText: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#121212',
     },
     drawText: {
         fontSize: 11,
-        color: '#f59e0b',
+        color: '#F59E0B',
         fontWeight: '600',
-        marginTop: 2,
+        marginTop: 4,
     },
     infoRow: {
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 16,
-        marginTop: 12,
-        paddingTop: 12,
+        gap: 20,
+        marginTop: 16,
+        paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
+        borderTopColor: '#F3F4F6',
     },
     infoItem: {
         flexDirection: 'row',
         alignItems: 'center',
-        gap: 4,
+        gap: 6,
     },
     infoText: {
-        fontSize: 11,
-        color: '#6b7280',
+        fontSize: 13,
+        color: '#6B7280',
+        fontWeight: '500',
     },
     shareButton: {
         marginTop: 16,
-        backgroundColor: '#1a73e8',
-        borderRadius: 8,
+        backgroundColor: '#2962FF',
+        borderRadius: 12,
     },
     shareButtonLabel: {
         fontSize: 14,
@@ -451,22 +474,23 @@ const styles = StyleSheet.create({
         paddingVertical: 60,
     },
     emptyTitle: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        color: '#1f2937',
-        marginTop: 16,
+        fontSize: 20,
+        fontWeight: '700',
+        color: '#121212',
+        marginTop: 20,
     },
     emptySubtitle: {
-        fontSize: 14,
-        color: '#6b7280',
+        fontSize: 15,
+        color: '#6B7280',
         marginTop: 8,
+        lineHeight: 22,
     },
-    // New styles for updated ResultCard
+    // Result Card styles
     scoreBoard: {
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        marginVertical: 12,
+        marginVertical: 16,
         paddingHorizontal: 8,
     },
     teamSection: {
@@ -474,44 +498,48 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     winnerText: {
-        color: '#10b981',
-        fontWeight: 'bold',
+        color: '#10B981',
+        fontWeight: '700',
     },
     scoreSection: {
         alignItems: 'center',
         paddingHorizontal: 12,
     },
     score: {
-        fontSize: 28,
-        fontWeight: 'bold',
-        color: '#1f2937',
+        fontSize: 32,
+        fontWeight: '700',
+        color: '#121212',
     },
     winnerScore: {
-        color: '#10b981',
+        color: '#10B981',
     },
     scoreSeparator: {
-        fontSize: 20,
-        color: '#9ca3af',
+        fontSize: 24,
+        fontWeight: '600',
+        color: '#9CA3AF',
         marginHorizontal: 8,
     },
     matchInfo: {
         flexDirection: 'row',
         justifyContent: 'center',
-        gap: 16,
-        marginTop: 12,
-        paddingTop: 12,
+        gap: 20,
+        marginTop: 16,
+        paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#e5e7eb',
+        borderTopColor: '#F3F4F6',
     },
     detailHint: {
         flexDirection: 'row',
         justifyContent: 'center',
         alignItems: 'center',
-        marginTop: 12,
-        paddingTop: 8,
+        marginTop: 16,
+        paddingTop: 12,
+        borderTopWidth: 1,
+        borderTopColor: '#F3F4F6',
     },
     detailHintText: {
-        fontSize: 12,
-        color: '#9ca3af',
+        fontSize: 13,
+        color: '#2962FF',
+        fontWeight: '600',
     },
 });

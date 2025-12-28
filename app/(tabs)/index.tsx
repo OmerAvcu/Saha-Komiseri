@@ -3,8 +3,9 @@ import { Match } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import React from 'react';
-import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { Alert, FlatList, Platform, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Card, Chip, FAB, IconButton, Surface, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 function MatchCard({ match, onDelete, onEdit }: { match: Match; onDelete: (id: string) => void; onEdit: (id: string) => void }) {
   return (
@@ -134,8 +135,8 @@ export default function MaclarScreen() {
   }
 
   return (
-    <View style={styles.container}>
-      <Surface style={styles.headerSurface} elevation={1}>
+    <SafeAreaView style={styles.container} edges={['top']}>
+      <Surface style={styles.headerSurface} elevation={0}>
         <Text style={styles.headerTitle}>Yaklaşan Maçlar</Text>
         <Text style={styles.headerSubtitle}>
           {scheduledMatches.length > 0
@@ -162,68 +163,78 @@ export default function MaclarScreen() {
         color="#ffffff"
         onPress={() => router.push('/match-form')}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F5F7FA',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#F5F7FA',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#6B7280',
   },
   headerSurface: {
-    padding: 16,
-    backgroundColor: '#ffffff',
-    marginBottom: 8,
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 16,
+    backgroundColor: '#2962FF',
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontSize: 24,
+    fontWeight: '700',
+    color: '#FFFFFF',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: 'rgba(255,255,255,0.8)',
     marginTop: 4,
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 80,
+    paddingTop: 16,
+    paddingBottom: 100,
   },
   emptyListContent: {
     flex: 1,
     justifyContent: 'center',
   },
   card: {
-    marginVertical: 8,
-    borderRadius: 12,
-    backgroundColor: '#ffffff',
+    marginBottom: 12,
+    borderRadius: 16,
+    backgroundColor: '#FFFFFF',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.08,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
   },
   headerRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 8,
+    marginBottom: 12,
   },
   leagueRow: {
     flexDirection: 'row',
     gap: 8,
     flex: 1,
-  },
-  deleteButton: {
-    margin: -8,
-    marginRight: -4,
+    flexWrap: 'wrap',
   },
   actionButtons: {
     flexDirection: 'row',
@@ -231,43 +242,56 @@ const styles = StyleSheet.create({
   actionButton: {
     margin: -4,
   },
+  deleteButton: {
+    margin: -8,
+    marginRight: -4,
+  },
   leagueChip: {
-    backgroundColor: '#e8f0fe',
+    backgroundColor: '#E8F0FE',
+    borderRadius: 20,
   },
   categoryChip: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#F3F4F6',
+    borderRadius: 20,
   },
   chipText: {
     fontSize: 11,
+    fontWeight: '600',
   },
   teamsContainer: {
     alignItems: 'center',
-    marginVertical: 12,
+    marginVertical: 16,
+    paddingHorizontal: 8,
   },
   teamRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 4,
+    gap: 10,
+    paddingVertical: 6,
   },
   teamName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: 17,
+    fontWeight: '700',
+    color: '#121212',
   },
   vs: {
-    fontSize: 12,
-    color: '#9ca3af',
-    marginVertical: 4,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#9CA3AF',
+    marginVertical: 6,
+    backgroundColor: '#F3F4F6',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 12,
   },
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'center',
     gap: 24,
-    marginTop: 12,
-    paddingTop: 12,
+    marginTop: 16,
+    paddingTop: 16,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: '#F3F4F6',
   },
   infoItem: {
     flexDirection: 'row',
@@ -276,41 +300,55 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#6B7280',
+    fontWeight: '500',
   },
   venueRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 6,
-    marginTop: 8,
+    marginTop: 10,
   },
   venueText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#6B7280',
   },
   emptyContainer: {
     alignItems: 'center',
-    paddingVertical: 40,
+    paddingVertical: 60,
   },
   emptyTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
-    marginTop: 16,
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#121212',
+    marginTop: 20,
   },
   emptySubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 15,
+    color: '#6B7280',
     textAlign: 'center',
     marginTop: 8,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
+    lineHeight: 22,
   },
   fab: {
     position: 'absolute',
-    margin: 16,
+    margin: 20,
     right: 0,
     bottom: 0,
-    backgroundColor: '#1a73e8',
+    backgroundColor: '#2962FF',
+    borderRadius: 16,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#2962FF',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.3,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 6,
+      },
+    }),
   },
 });
