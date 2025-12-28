@@ -8,7 +8,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AyarlarScreen() {
     const router = useRouter();
-    const { settings } = useAppContext();
+    const { settings, exportData, importData, clearAllData } = useAppContext();
     const [darkMode, setDarkMode] = React.useState(false);
     const [notifications, setNotifications] = React.useState(true);
 
@@ -16,14 +16,13 @@ export default function AyarlarScreen() {
 
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
-            {/* Header */}
-            <Surface style={styles.headerSurface} elevation={0}>
+            <Surface style={styles.headerSurface} elevation={4}>
                 <Text style={styles.headerTitle}>Ayarlar</Text>
+                <Text style={styles.headerSubtitle}>Uygulama tercihleri ve araçlar</Text>
             </Surface>
-
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Kategori Yönetimi */}
-                <Surface style={styles.section} elevation={0}>
+                <Surface style={styles.section} elevation={1}>
                     <Text style={styles.sectionTitle}>Kategori Yönetimi</Text>
                     <List.Item
                         title="Kategoriler"
@@ -54,20 +53,9 @@ export default function AyarlarScreen() {
                         right={() => (
                             <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
                         )}
+                        onPress={() => router.push('/leagues')}
                     />
-                    <Divider />
-                    <List.Item
-                        title="Takımlar"
-                        titleStyle={styles.listTitle}
-                        description="Takım bilgilerini yönet"
-                        descriptionStyle={styles.listDescription}
-                        left={(props) => (
-                            <List.Icon {...props} icon="shield-outline" color="#1a73e8" />
-                        )}
-                        right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
-                        )}
-                    />
+
                 </Surface>
 
                 {/* Kurallar */}
@@ -156,11 +144,49 @@ export default function AyarlarScreen() {
                         description="Saha Komiseri v1.0.0"
                         descriptionStyle={styles.listDescription}
                         left={(props) => (
-                            <List.Icon {...props} icon="information-outline" color="#2962FF" />
+                            <List.Icon {...props} icon="information-outline" color="#1a73e8" />
                         )}
                         right={() => (
                             <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
                         )}
+                    />
+
+                </Surface>
+
+                {/* Veri Yönetimi */}
+                <Surface style={[styles.section, { marginTop: 16 }]} elevation={0}>
+                    <Text style={styles.sectionTitle}>Veri Yönetimi</Text>
+                    <List.Item
+                        title="Yedek Al (Dışa Aktar)"
+                        titleStyle={styles.listTitle}
+                        description="Tüm verileri dosyaya kaydet"
+                        descriptionStyle={styles.listDescription}
+                        left={(props) => (
+                            <List.Icon {...props} icon="database-export" color="#1a73e8" />
+                        )}
+                        onPress={exportData}
+                    />
+                    <Divider />
+                    <List.Item
+                        title="Yedeği Geri Yükle"
+                        titleStyle={styles.listTitle}
+                        description="Dosyadan verileri geri yükle"
+                        descriptionStyle={styles.listDescription}
+                        left={(props) => (
+                            <List.Icon {...props} icon="database-import" color="#1a73e8" />
+                        )}
+                        onPress={importData}
+                    />
+                    <Divider />
+                    <List.Item
+                        title="Tüm Verileri Temizle"
+                        titleStyle={[styles.listTitle, { color: '#EF4444' }]}
+                        description="Uygulamayı sıfırla (Geri alınamaz)"
+                        descriptionStyle={styles.listDescription}
+                        left={(props) => (
+                            <List.Icon {...props} icon="delete-forever" color="#EF4444" />
+                        )}
+                        onPress={clearAllData}
                     />
                 </Surface>
             </ScrollView>
@@ -171,44 +197,51 @@ export default function AyarlarScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: '#f8f9fa',
     },
     section: {
         marginVertical: 8,
         marginHorizontal: 16,
-        borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        borderRadius: 12,
+        backgroundColor: '#ffffff',
         overflow: 'hidden',
     },
     sectionTitle: {
-        fontSize: 12,
-        fontWeight: '700',
-        color: '#2962FF',
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#1a73e8',
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 8,
         textTransform: 'uppercase',
-        letterSpacing: 1.5,
+        letterSpacing: 1,
     },
     listTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#121212',
+        color: '#1f2937',
     },
     listDescription: {
         fontSize: 13,
-        color: '#6B7280',
-        marginTop: 3,
+        color: '#4a4a4a',
+        marginTop: 2,
     },
     headerSurface: {
         paddingHorizontal: 20,
         paddingTop: 16,
-        paddingBottom: 12,
+        paddingBottom: 20,
         backgroundColor: '#2962FF',
+        borderBottomLeftRadius: 0,
+        borderBottomRightRadius: 0,
     },
     headerTitle: {
-        fontSize: 24,
-        fontWeight: '700',
+        fontSize: 28,
+        fontWeight: 'bold',
         color: '#FFFFFF',
+    },
+    headerSubtitle: {
+        fontSize: 14,
+        color: 'rgba(255,255,255,0.8)',
+        marginTop: 4,
     },
 });

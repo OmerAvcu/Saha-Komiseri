@@ -8,9 +8,21 @@ export interface CategoryRule {
     description?: string;
 }
 
+// Default leagues
+export const DEFAULT_LEAGUES: string[] = [
+    'Süper Amatör Ligi',
+    '1. Amatör Küme',
+    '2. Amatör Küme',
+    'U19 Gelişim Ligi',
+    'U17 Elit Ligi',
+    'U16 Gelişim Ligi',
+    'Bölgesel Amatör Lig (BAL)',
+];
+
 // Settings Interface
 export interface Settings {
     categories: CategoryRule[];
+    leagues: string[];
     defaultCategory: string; // category id
     appVersion: string;
     lastUpdated: string;
@@ -66,6 +78,7 @@ export const DEFAULT_CATEGORIES: CategoryRule[] = [
 // Default settings
 export const DEFAULT_SETTINGS: Settings = {
     categories: DEFAULT_CATEGORIES,
+    leagues: DEFAULT_LEAGUES,
     defaultCategory: 'u19',
     appVersion: '1.0.0',
     lastUpdated: new Date().toISOString(),

@@ -9,6 +9,7 @@ import {
     Button,
     Card,
     Chip,
+    IconButton,
     Modal,
     Portal,
     Surface,
@@ -284,6 +285,65 @@ export default function CanliTakipScreen() {
         }
     };
 
+    // Delete event
+    const handleDeleteEvent = (event: MatchEvent) => {
+        Alert.alert(
+            'Olayı Sil',
+            'Bu olayı silmek istediğinize emin misiniz?',
+            [
+                { text: 'İptal', style: 'cancel' },
+                {
+                    text: 'Sil',
+                    style: 'destructive',
+                    onPress: async () => {
+                        if (!activeMatch) return;
+
+                        try {
+                            // Calculate new scores if goal is deleted
+                            let homeScore = activeMatch.homeScore || 0;
+                            let awayScore = activeMatch.awayScore || 0;
+
+                            if (event.type === 'goal') {
+                                if (event.team === 'home') {
+                                    homeScore = Math.max(0, homeScore - 1);
+                                } else {
+                                    awayScore = Math.max(0, awayScore - 1);
+                                }
+                            }
+
+                            // Remove event from list
+                            const updatedEvents = activeMatch.events.filter(e => e.id !== event.id);
+
+                            const updatedMatch: Match = {
+                                ...activeMatch,
+                                homeScore,
+                                awayScore,
+                                events: updatedEvents,
+                            };
+
+                            setActiveMatch(updatedMatch);
+
+                            // Persist updates
+                            try {
+                                await updateMatch(activeMatch.id, {
+                                    status: 'live',
+                                    homeScore,
+                                    awayScore,
+                                    events: updatedEvents,
+                                });
+                            } catch (error) {
+                                console.error('Error updating match:', error);
+                            }
+                        } catch (error) {
+                            console.error('Error deleting event:', error);
+                            Alert.alert('Hata', 'Olay silinemedi');
+                        }
+                    },
+                },
+            ]
+        );
+    };
+
     // End match
     const handleEndMatch = () => {
         Alert.alert(
@@ -552,6 +612,12 @@ export default function CanliTakipScreen() {
                                             {event.player ? `${event.player} - ` : ''}{teamName}
                                         </Text>
                                     </View>
+                                    <IconButton
+                                        icon="delete"
+                                        size={20}
+                                        iconColor="#EF4444"
+                                        onPress={() => handleDeleteEvent(event)}
+                                    />
                                 </View>
                             );
                         })

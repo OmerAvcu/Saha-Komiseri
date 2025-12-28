@@ -7,7 +7,14 @@ import {
 } from '@/services/storage';
 import { Match, NewMatch, UpdateMatch } from '@/types/match';
 import { CategoryRule, Settings } from '@/types/settings';
+// @ts-ignore
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system/legacy';
+// @ts-ignore
+import * as Sharing from 'expo-sharing';
 import React, { createContext, ReactNode, useCallback, useContext, useEffect, useState } from 'react';
+import { Alert, Platform } from 'react-native';
 import { v4 as uuidv4 } from 'uuid';
 
 // Context type definition
@@ -40,6 +47,11 @@ interface AppContextType {
 
     // Refresh data
     refreshData: () => Promise<void>;
+
+    // Backup/Restore operations
+    exportData: () => Promise<void>;
+    importData: () => Promise<boolean>;
+    clearAllData: () => Promise<void>;
 }
 
 // Create context with undefined default
@@ -231,8 +243,190 @@ export function AppProvider({ children }: AppProviderProps) {
         return settings?.categories.find(category => category.id === id);
     }, [settings]);
 
+    // Export all data as JSON and share
+    const exportData = useCallback(async (): Promise<void> => {
+        try {
+            const backupData = {
+                version: '1.0',
+                exportDate: new Date().toISOString(),
+                matches,
+                settings,
+            };
+
+            const jsonString = JSON.stringify(backupData, null, 2);
+            const fileName = `saha-komiseri-backup-${new Date().toISOString().split('T')[0]}.json`;
+
+            // Helper to share/save via standard method
+            const shareFile = async () => {
+                try {
+                    const filePath = `${FileSystem.documentDirectory}${fileName}`;
+                    await FileSystem.writeAsStringAsync(filePath, jsonString, {
+                        encoding: FileSystem.EncodingType.UTF8,
+                    });
+
+                    const isAvailable = await Sharing.isAvailableAsync();
+                    if (isAvailable) {
+                        await Sharing.shareAsync(filePath, {
+                            mimeType: 'application/json',
+                            dialogTitle: 'Maç Verilerini Paylaş/Kaydet',
+                            UTI: 'public.json',
+                        });
+                    } else {
+                        Alert.alert('Hata', 'Paylaşım özelliği kullanılamıyor.');
+                    }
+                } catch (err) {
+                    Alert.alert('Hata', 'Dosya paylaşılırken hata oluştu.');
+                }
+            };
+
+            // Android: Use StorageAccessFramework first, fallback to Share
+            if (Platform.OS === 'android') {
+                try {
+                    const permissions = await FileSystem.StorageAccessFramework.requestDirectoryPermissionsAsync();
+                    if (permissions.granted) {
+                        const directoryUri = permissions.directoryUri;
+                        const fileUri = await FileSystem.StorageAccessFramework.createFileAsync(
+                            directoryUri,
+                            fileName,
+                            'application/json'
+                        );
+
+                        await FileSystem.writeAsStringAsync(fileUri, jsonString, {
+                            encoding: FileSystem.EncodingType.UTF8,
+                        });
+                        Alert.alert('Başarılı', 'Yedek dosyası seçilen klasöre kaydedildi.');
+                    } else {
+                        // User canceled picker, ask if they want to share instead
+                        Alert.alert(
+                            'Klasör Seçilmedi',
+                            'Dosyayı farklı bir yöntemle (Paylaş/Kaydet) kaydetmek ister misiniz?',
+                            [
+                                { text: 'Hayır', style: 'cancel' },
+                                { text: 'Evet', onPress: shareFile }
+                            ]
+                        );
+                    }
+                } catch (e) {
+                    console.log('SAF Error handled:', e);
+                    // Fallback to share if SAF fails (e.g. Downloads folder not writable)
+                    Alert.alert(
+                        'Klasör Hatası',
+                        'Seçilen klasöre yazma izni alınamadı (Android kısıtlaması olabilir). Alternatif paylaşım ekranı açılıyor.',
+                        [{ text: 'Tamam', onPress: shareFile }]
+                    );
+                }
+            } else {
+                // iOS
+                await shareFile();
+            }
+        } catch (error) {
+            console.error('Export error:', error);
+            Alert.alert('Hata', `Veriler dışa aktarılırken bir hata oluştu: ${error}`);
+        }
+    }, [matches, settings]);
+
+    // Import data from JSON file
+    const importData = useCallback(async (): Promise<boolean> => {
+        try {
+            const result = await DocumentPicker.getDocumentAsync({
+                type: 'application/json',
+                copyToCacheDirectory: true,
+            });
+
+            if (result.canceled || !result.assets || result.assets.length === 0) {
+                return false;
+            }
+
+            const fileUri = result.assets[0].uri;
+            let fileContent;
+
+            // Try to use legacy method via require to avoid deprecation error
+            try {
+                // @ts-ignore
+                const legacy = require('expo-file-system/build/legacy');
+                if (legacy && legacy.readAsStringAsync) {
+                    fileContent = await legacy.readAsStringAsync(fileUri, {
+                        encoding: 'utf8',
+                    });
+                } else {
+                    fileContent = await (FileSystem as any).readAsStringAsync(fileUri, {
+                        encoding: 'utf8',
+                    });
+                }
+            } catch (e) {
+                fileContent = await (FileSystem as any).readAsStringAsync(fileUri, {
+                    encoding: 'utf8',
+                });
+            }
+
+            const backupData = JSON.parse(fileContent);
+
+            // Validate backup structure
+            if (!backupData.matches || !backupData.settings) {
+                Alert.alert('Hata', 'Geçersiz yedek dosyası formatı.');
+                return false;
+            }
+
+            // Save to storage
+            await saveMatches(backupData.matches);
+            await saveSettings(backupData.settings);
+
+            // Update state
+            setMatches(backupData.matches);
+            setSettings(backupData.settings);
+
+            Alert.alert('Başarılı', 'Veriler başarıyla geri yüklendi!', [
+                { text: 'Tamam' }
+            ]);
+
+            return true;
+        } catch (error) {
+            console.error('Import error:', error);
+            Alert.alert('Hata', 'Veriler içe aktarılırken bir hata oluştu. Dosya formatını kontrol edin.');
+            return false;
+        }
+    }, []);
+
+    // Clear all data
+    const clearAllData = useCallback(async (): Promise<void> => {
+        return new Promise((resolve) => {
+            Alert.alert(
+                'Tüm Verileri Sil',
+                'Bu işlem tüm maç kayıtlarını ve ayarları silecektir. Bu işlem geri alınamaz!\n\nDevam etmek istediğinize emin misiniz?',
+                [
+                    { text: 'İptal', style: 'cancel', onPress: () => resolve() },
+                    {
+                        text: 'Tümünü Sil',
+                        style: 'destructive',
+                        onPress: async () => {
+                            try {
+                                await AsyncStorage.multiRemove([
+                                    '@SahaKomiseri:matches',
+                                    '@SahaKomiseri:settings',
+                                    '@SahaKomiseri:initialized',
+                                    '@SahaKomiseri:liveMatch'
+                                ]);
+
+                                // Re-initialize with defaults
+                                const data = await initializeDefaultData();
+                                setMatches(data.matches);
+                                setSettings(data.settings);
+
+                                Alert.alert('Başarılı', 'Tüm veriler silindi ve uygulama sıfırlandı.');
+                            } catch (error) {
+                                console.error('Clear data error:', error);
+                                Alert.alert('Hata', 'Veriler silinirken bir hata oluştu.');
+                            }
+                            resolve();
+                        },
+                    },
+                ]
+            );
+        });
+    }, []);
+
     // Context value
-    const value: AppContextType = {
+    const value: AppContextType = React.useMemo(() => ({
         matches,
         settings,
         isLoading,
@@ -250,7 +444,31 @@ export function AppProvider({ children }: AppProviderProps) {
         deleteCategory,
         getCategoryById,
         refreshData,
-    };
+        exportData,
+        importData,
+        clearAllData,
+    }), [
+        matches,
+        settings,
+        isLoading,
+        error,
+        addMatch,
+        updateMatch,
+        deleteMatch,
+        getMatchById,
+        getScheduledMatches,
+        getLiveMatches,
+        getCompletedMatches,
+        updateSettings,
+        addCategory,
+        updateCategory,
+        deleteCategory,
+        getCategoryById,
+        refreshData,
+        exportData,
+        importData,
+        clearAllData
+    ]);
 
     return (
         <AppContext.Provider value={value}>

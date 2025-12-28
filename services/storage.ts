@@ -94,7 +94,18 @@ export async function saveMatches(matches: Match[]): Promise<void> {
 export async function loadSettings(): Promise<Settings> {
     try {
         const jsonValue = await AsyncStorage.getItem(STORAGE_KEYS.SETTINGS);
-        return jsonValue != null ? JSON.parse(jsonValue) : DEFAULT_SETTINGS;
+        if (jsonValue != null) {
+            const parsedSettings = JSON.parse(jsonValue);
+            // Merge with default settings to ensure new fields (like leagues) are present
+            return {
+                ...DEFAULT_SETTINGS,
+                ...parsedSettings,
+                // Ensure array fields are not undefined if they were missing in old data
+                leagues: parsedSettings.leagues || DEFAULT_SETTINGS.leagues,
+                categories: parsedSettings.categories || DEFAULT_SETTINGS.categories,
+            };
+        }
+        return DEFAULT_SETTINGS;
     } catch (e) {
         console.error('Error loading settings:', e);
         return DEFAULT_SETTINGS;

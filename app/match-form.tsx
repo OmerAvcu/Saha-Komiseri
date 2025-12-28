@@ -40,6 +40,7 @@ export default function MatchFormScreen() {
     });
 
     const categories = settings?.categories || [];
+    const leagues = settings?.leagues || [];
 
     // Load existing match data in edit mode
     useEffect(() => {
@@ -281,18 +282,23 @@ export default function MatchFormScreen() {
                         activeOutlineColor="#1a73e8"
                     />
 
-                    <TextInput
-                        label="Lig / Turnuva"
-                        value={formData.league}
-                        onChangeText={(text) => setFormData({ ...formData, league: text })}
-                        style={styles.input}
-                        mode="outlined"
-                        placeholder="Örn: U19 Ligi"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
-                    />
+                    <Text style={styles.pickerLabel}>Lig / Turnuva *</Text>
+                    <View style={styles.pickerContainer}>
+                        <Picker
+                            selectedValue={formData.league}
+                            onValueChange={(value) => setFormData({ ...formData, league: value })}
+                            style={styles.picker}
+                        >
+                            <Picker.Item label="Seçiniz..." value="" />
+                            {leagues.map((league, index) => (
+                                <Picker.Item
+                                    key={index}
+                                    label={league}
+                                    value={league}
+                                />
+                            ))}
+                        </Picker>
+                    </View>
 
                     <Text style={styles.pickerLabel}>Kategori *</Text>
                     <View style={styles.pickerContainer}>
