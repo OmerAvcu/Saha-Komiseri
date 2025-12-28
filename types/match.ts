@@ -35,6 +35,7 @@ export interface Match {
     venue: string;
     league: string;
     category: string; // U16, U19, Amatör, etc.
+    referee?: string; // Main referee name
     status: MatchStatus;
     homeScore: number;
     awayScore: number;

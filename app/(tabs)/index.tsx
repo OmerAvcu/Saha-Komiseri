@@ -1,33 +1,43 @@
 import { useAppContext } from '@/context/AppContext';
 import { Match } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Card, Chip, Surface, Text } from 'react-native-paper';
+import { Alert, FlatList, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Card, Chip, FAB, IconButton, Surface, Text } from 'react-native-paper';
 
-function MatchCard({ match }: { match: Match }) {
+function MatchCard({ match, onDelete }: { match: Match; onDelete: (id: string) => void }) {
   return (
     <Card style={styles.card} mode="elevated">
       <Card.Content>
-        <View style={styles.leagueRow}>
-          <Chip
-            icon="trophy"
-            mode="outlined"
-            compact
-            textStyle={styles.chipText}
-            style={styles.leagueChip}
-          >
-            {match.league}
-          </Chip>
-          <Chip
-            icon="tag"
-            mode="flat"
-            compact
-            textStyle={styles.chipText}
-            style={styles.categoryChip}
-          >
-            {match.category}
-          </Chip>
+        <View style={styles.headerRow}>
+          <View style={styles.leagueRow}>
+            <Chip
+              icon="trophy"
+              mode="outlined"
+              compact
+              textStyle={styles.chipText}
+              style={styles.leagueChip}
+            >
+              {match.league}
+            </Chip>
+            <Chip
+              icon="tag"
+              mode="flat"
+              compact
+              textStyle={styles.chipText}
+              style={styles.categoryChip}
+            >
+              {match.category}
+            </Chip>
+          </View>
+          <IconButton
+            icon="delete"
+            size={20}
+            iconColor="#ef4444"
+            onPress={() => onDelete(match.id)}
+            style={styles.deleteButton}
+          />
         </View>
 
         <View style={styles.teamsContainer}>
@@ -75,8 +85,31 @@ function EmptyState() {
 }
 
 export default function MaclarScreen() {
-  const { getScheduledMatches, isLoading } = useAppContext();
+  const router = useRouter();
+  const { getScheduledMatches, deleteMatch, isLoading } = useAppContext();
   const scheduledMatches = getScheduledMatches();
+
+  const handleDeleteMatch = (id: string) => {
+    const match = scheduledMatches.find(m => m.id === id);
+    Alert.alert(
+      'Maç Sil',
+      `"${match?.homeTeam} vs ${match?.awayTeam}" maçını silmek istediğinize emin misiniz?`,
+      [
+        { text: 'İptal', style: 'cancel' },
+        {
+          text: 'Sil',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await deleteMatch(id);
+            } catch (error) {
+              Alert.alert('Hata', 'Maç silinemedi');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   if (isLoading) {
     return (
@@ -101,13 +134,20 @@ export default function MaclarScreen() {
       <FlatList
         data={scheduledMatches}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MatchCard match={item} />}
+        renderItem={({ item }) => <MatchCard match={item} onDelete={handleDeleteMatch} />}
         contentContainerStyle={[
           styles.listContent,
           scheduledMatches.length === 0 && styles.emptyListContent
         ]}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={<EmptyState />}
+      />
+
+      <FAB
+        icon="plus"
+        style={styles.fab}
+        color="#ffffff"
+        onPress={() => router.push('/match-form')}
       />
     </View>
   );
@@ -146,7 +186,7 @@ const styles = StyleSheet.create({
   },
   listContent: {
     paddingHorizontal: 16,
-    paddingBottom: 20,
+    paddingBottom: 80,
   },
   emptyListContent: {
     flex: 1,
@@ -157,10 +197,20 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     backgroundColor: '#ffffff',
   },
+  headerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 8,
+  },
   leagueRow: {
     flexDirection: 'row',
     gap: 8,
-    marginBottom: 12,
+    flex: 1,
+  },
+  deleteButton: {
+    margin: -8,
+    marginRight: -4,
   },
   leagueChip: {
     backgroundColor: '#e8f0fe',
@@ -236,5 +286,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 8,
     paddingHorizontal: 24,
+  },
+  fab: {
+    position: 'absolute',
+    margin: 16,
+    right: 0,
+    bottom: 0,
+    backgroundColor: '#1a73e8',
   },
 });

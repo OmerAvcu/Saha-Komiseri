@@ -1,9 +1,81 @@
 import { useAppContext } from '@/context/AppContext';
-import { Match } from '@/types/match';
+import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import React from 'react';
-import { FlatList, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Card, Chip, Surface, Text } from 'react-native-paper';
+import { FlatList, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
+
+// Generate match report text for sharing
+function generateMatchReport(match: Match): string {
+    const getEventIcon = (type: string): string => {
+        switch (type) {
+            case 'goal': return '⚽';
+            case 'yellowCard': return '🟨';
+            case 'redCard': return '🟥';
+            case 'substitution': return '🔄';
+            default: return '•';
+        }
+    };
+
+    const getEventText = (event: MatchEvent, match: Match): string => {
+        const teamName = event.team === 'home' ? match.homeTeam : match.awayTeam;
+        const icon = getEventIcon(event.type);
+
+        switch (event.type) {
+            case 'goal':
+                return `• ${event.minute}' ${icon} Gol${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+            case 'yellowCard':
+                return `• ${event.minute}' ${icon} Sarı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+            case 'redCard':
+                return `• ${event.minute}' ${icon} Kırmızı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+            case 'substitution':
+                const subInfo = event.playerIn && event.playerOut
+                    ? `(Giren: ${event.playerIn}, Çıkan: ${event.playerOut})`
+                    : event.player ? `(${event.player})` : '';
+                return `• ${event.minute}' ${icon} Değişiklik ${subInfo} - ${teamName}`;
+            default:
+                return `• ${event.minute}' ${event.type}`;
+        }
+    };
+
+    // Sort events by minute (chronological order)
+    const sortedEvents = [...(match.events || [])].sort((a, b) => a.minute - b.minute);
+
+    let eventsText = '';
+    if (sortedEvents.length > 0) {
+        eventsText = sortedEvents.map(event => getEventText(event, match)).join('\n');
+    } else {
+        eventsText = '• Olay kaydı girilmedi';
+    }
+
+    const report = `📋 MÜSABAKA RAPORU
+
+🏆 ${match.category}
+🏟 ${match.venue}
+🗓 ${match.date} - ${match.time}
+
+⚔️ ${match.homeTeam}  ${match.homeScore} - ${match.awayScore}  ${match.awayTeam}
+--------------------------------
+⏱ DAKİKALAR & OLAYLAR:
+${eventsText}
+--------------------------------
+👤 Hakem: ${match.referee || 'Belirtilmedi'}
+📱 Saha Komiseri Uygulaması ile oluşturuldu.`;
+
+    return report;
+}
+
+// Handle share action
+async function handleShareMatch(match: Match) {
+    try {
+        const report = generateMatchReport(match);
+        await Share.share({
+            message: report,
+        });
+    } catch (error) {
+        console.error('Error sharing match:', error);
+    }
+}
 
 function ResultCard({ match }: { match: Match }) {
     const homeWin = match.homeScore > match.awayScore;
@@ -81,6 +153,17 @@ function ResultCard({ match }: { match: Match }) {
                         <Text style={styles.infoText}>{match.venue}</Text>
                     </View>
                 </View>
+
+                {/* Share Button */}
+                <Button
+                    mode="contained"
+                    onPress={() => handleShareMatch(match)}
+                    icon="share-variant"
+                    style={styles.shareButton}
+                    labelStyle={styles.shareButtonLabel}
+                >
+                    Raporu Paylaş
+                </Button>
             </Card.Content>
         </Card>
     );
@@ -253,6 +336,15 @@ const styles = StyleSheet.create({
     infoText: {
         fontSize: 11,
         color: '#6b7280',
+    },
+    shareButton: {
+        marginTop: 16,
+        backgroundColor: '#1a73e8',
+        borderRadius: 8,
+    },
+    shareButtonLabel: {
+        fontSize: 14,
+        fontWeight: '600',
     },
     emptyContainer: {
         alignItems: 'center',

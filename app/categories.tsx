@@ -80,8 +80,9 @@ export default function CategoriesScreen() {
                 });
             }
             setModalVisible(false);
-        } catch (error) {
-            Alert.alert('Hata', 'Kategori kaydedilemedi');
+        } catch (error: any) {
+            console.error('Error saving category:', error);
+            Alert.alert('Hata', `Kategori kaydedilemedi: ${error?.message || 'Bilinmeyen hata'}`);
         }
     };
 
