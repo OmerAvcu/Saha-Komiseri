@@ -55,6 +55,14 @@ export default function CanliTakipScreen() {
     const matchStartTimeRef = useRef<number | null>(null);
     const pausedSecondsRef = useRef<number>(0);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+    const activeMatchRef = useRef<Match | null>(null);
+    const isRunningRef = useRef<boolean>(false);
+
+    // Keep refs in sync for the AppState listener to avoid effect re-runs
+    useEffect(() => {
+        activeMatchRef.current = activeMatch;
+        isRunningRef.current = isRunning;
+    }, [activeMatch, isRunning]);
 
     // Modal state
     const [modalVisible, setModalVisible] = useState(false);
@@ -70,8 +78,8 @@ export default function CanliTakipScreen() {
     // Dynamic styles
     const styles = useMemo(() => createStyles(theme), [theme]);
 
-    const scheduledMatches = getScheduledMatches();
-    const liveMatches = getLiveMatches();
+    const scheduledMatches = useMemo(() => getScheduledMatches(), [getScheduledMatches]);
+    const liveMatches = useMemo(() => getLiveMatches(), [getLiveMatches]);
 
     // Load persisted live match on mount
     useEffect(() => {
@@ -81,7 +89,7 @@ export default function CanliTakipScreen() {
     // Handle app state changes (background/foreground)
     useEffect(() => {
         const subscription = AppState.addEventListener('change', async (nextAppState) => {
-            if (nextAppState === 'active' && activeMatch && isRunning) {
+            if (nextAppState === 'active' && activeMatchRef.current && isRunningRef.current) {
                 // App came to foreground, recalculate elapsed time
                 const stored = await AsyncStorage.getItem(LIVE_MATCH_STORAGE_KEY);
                 if (stored) {
@@ -99,7 +107,7 @@ export default function CanliTakipScreen() {
         return () => {
             subscription.remove();
         };
-    }, [activeMatch, isRunning]);
+    }, []); // Only on mount
 
     const loadPersistedMatch = async () => {
         try {
@@ -262,7 +270,6 @@ export default function CanliTakipScreen() {
             const updatedMatch: Match = {
                 ...activeMatch,
                 homeScore,
-                awayScore,
                 awayScore,
                 events: [newEvent, ...(activeMatch.events || [])],
                 currentMinute: minute,
