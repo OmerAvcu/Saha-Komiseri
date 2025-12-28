@@ -4,8 +4,7 @@ import React from 'react';
 import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useColorScheme } from '@/components/useColorScheme';
-import Colors from '@/constants/Colors';
+import { useAppContext } from '@/context/AppContext';
 
 function TabBarIcon(props: {
   name: React.ComponentProps<typeof MaterialCommunityIcons>['name'];
@@ -15,8 +14,7 @@ function TabBarIcon(props: {
 }
 
 export default function TabLayout() {
-  const colorScheme = useColorScheme();
-  const isDark = colorScheme === 'dark';
+  const { theme, isDarkMode } = useAppContext();
   const insets = useSafeAreaInsets();
 
   // Calculate safe bottom padding for Android gesture navigation
@@ -29,11 +27,11 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
-        tabBarInactiveTintColor: Colors[colorScheme ?? 'light'].tabIconDefault,
+        tabBarActiveTintColor: theme.tabBarActive,
+        tabBarInactiveTintColor: theme.tabBarInactive,
         tabBarStyle: {
-          backgroundColor: isDark ? '#1f2937' : '#ffffff',
-          borderTopColor: isDark ? '#374151' : '#e5e7eb',
+          backgroundColor: isDarkMode ? '#1E293B' : '#ffffff',
+          borderTopColor: theme.border,
           paddingBottom: bottomPadding,
           paddingTop: 8,
           height: tabBarHeight,

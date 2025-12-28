@@ -1,3 +1,4 @@
+import { Colors, ThemeColors } from '@/constants/Colors';
 import {
     initializeDefaultData,
     loadMatches,
@@ -25,6 +26,11 @@ interface AppContextType {
     settings: Settings | null;
     isLoading: boolean;
     error: string | null;
+
+    // Theme
+    isDarkMode: boolean;
+    toggleDarkMode: () => void;
+    theme: ThemeColors;
 
     // Match CRUD operations
     addMatch: (match: NewMatch) => Promise<Match>;
@@ -72,11 +78,35 @@ export function AppProvider({ children }: AppProviderProps) {
     const [settings, setSettings] = useState<Settings | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isDarkMode, setIsDarkMode] = useState(false);
+
+    // Derived theme
+    const theme = isDarkMode ? Colors.dark : Colors.light;
 
     // Initialize data on mount
     useEffect(() => {
         initializeData();
         setupNotifications();
+        loadThemePreference();
+    }, []);
+
+    const loadThemePreference = async () => {
+        try {
+            const storedTheme = await AsyncStorage.getItem('@SahaKomiseri:theme');
+            if (storedTheme) {
+                setIsDarkMode(storedTheme === 'dark');
+            }
+        } catch (error) {
+            console.error('Error loading theme:', error);
+        }
+    };
+
+    const toggleDarkMode = useCallback(async () => {
+        setIsDarkMode((prev) => {
+            const newMode = !prev;
+            AsyncStorage.setItem('@SahaKomiseri:theme', newMode ? 'dark' : 'light').catch(console.error);
+            return newMode;
+        });
     }, []);
 
     const setupNotifications = async () => {
@@ -504,6 +534,9 @@ export function AppProvider({ children }: AppProviderProps) {
         settings,
         isLoading,
         error,
+        isDarkMode,
+        theme,
+        toggleDarkMode,
         addMatch,
         updateMatch,
         deleteMatch,
@@ -526,6 +559,9 @@ export function AppProvider({ children }: AppProviderProps) {
         settings,
         isLoading,
         error,
+        isDarkMode,
+        theme,
+        toggleDarkMode,
         addMatch,
         updateMatch,
         deleteMatch,

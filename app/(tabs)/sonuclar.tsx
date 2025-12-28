@@ -1,3 +1,4 @@
+import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -92,7 +93,7 @@ async function handleShareMatch(match: Match) {
     }
 }
 
-function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
+function ResultCard({ match, onPress, styles, theme }: { match: Match; onPress: () => void; styles: any; theme: typeof Colors.light }) {
     const homeWin = match.homeScore > match.awayScore;
     const awayWin = match.awayScore > match.homeScore;
     const isDraw = match.homeScore === match.awayScore;
@@ -124,7 +125,7 @@ function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
 
                     <View style={styles.scoreBoard}>
                         <View style={styles.teamSection}>
-                            <MaterialCommunityIcons name="shield" size={24} color="#1a73e8" />
+                            <MaterialCommunityIcons name="shield" size={24} color={theme.primary} />
                             <Text style={[styles.teamName, homeWin && styles.winnerText]} numberOfLines={2}>
                                 {match.homeTeam}
                             </Text>
@@ -144,7 +145,7 @@ function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
                         </View>
 
                         <View style={styles.teamSection}>
-                            <MaterialCommunityIcons name="shield" size={24} color="#1a73e8" />
+                            <MaterialCommunityIcons name="shield" size={24} color={theme.primary} />
                             <Text style={[styles.teamName, awayWin && styles.winnerText]} numberOfLines={2}>
                                 {match.awayTeam}
                             </Text>
@@ -153,11 +154,11 @@ function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
 
                     <View style={styles.matchInfo}>
                         <View style={styles.infoItem}>
-                            <MaterialCommunityIcons name="calendar" size={14} color="#6b7280" />
+                            <MaterialCommunityIcons name="calendar" size={14} color={theme.textSecondary} />
                             <Text style={styles.infoText}>{match.date}</Text>
                         </View>
                         <View style={styles.infoItem}>
-                            <MaterialCommunityIcons name="map-marker" size={14} color="#6b7280" />
+                            <MaterialCommunityIcons name="map-marker" size={14} color={theme.textSecondary} />
                             <Text style={styles.infoText}>{match.venue}</Text>
                         </View>
                     </View>
@@ -165,7 +166,7 @@ function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
                     {/* View Details Hint */}
                     <View style={styles.detailHint}>
                         <Text style={styles.detailHintText}>Detaylar için dokun</Text>
-                        <MaterialCommunityIcons name="chevron-right" size={16} color="#9ca3af" />
+                        <MaterialCommunityIcons name="chevron-right" size={16} color={theme.textSecondary} />
                     </View>
                 </Card.Content>
             </Card>
@@ -173,10 +174,10 @@ function ResultCard({ match, onPress }: { match: Match; onPress: () => void }) {
     );
 }
 
-function EmptyState() {
+function EmptyState({ styles, theme }: { styles: any; theme: typeof Colors.light }) {
     return (
         <View style={styles.emptyContainer}>
-            <MaterialCommunityIcons name="trophy-broken" size={64} color="#9ca3af" />
+            <MaterialCommunityIcons name="trophy-broken" size={64} color={theme.textSecondary} />
             <Text style={styles.emptyTitle}>Henüz Sonuç Yok</Text>
             <Text style={styles.emptySubtitle}>
                 Tamamlanan maçlar burada görünecek.
@@ -187,11 +188,13 @@ function EmptyState() {
 
 export default function SonuclarScreen() {
     const router = useRouter();
-    const { getCompletedMatches, settings, isLoading } = useAppContext();
+    const { getCompletedMatches, settings, isLoading, theme } = useAppContext();
     const completedMatches = getCompletedMatches();
 
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     const handleViewDetail = (matchId: string) => {
         router.push({ pathname: '/match-detail' as any, params: { matchId } });
@@ -227,7 +230,7 @@ export default function SonuclarScreen() {
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1a73e8" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={styles.loadingText}>Yükleniyor...</Text>
             </View>
         );
@@ -250,11 +253,14 @@ export default function SonuclarScreen() {
                     onChangeText={setSearchQuery}
                     style={styles.searchInput}
                     mode="outlined"
-                    left={<TextInput.Icon icon="magnify" />}
-                    right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} /> : null}
+                    left={<TextInput.Icon icon="magnify" color={theme.textSecondary} />}
+                    right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} color={theme.textSecondary} /> : null}
                     dense
-                    outlineColor="#e5e7eb"
-                    activeOutlineColor="#1a73e8"
+                    outlineColor={theme.border}
+                    activeOutlineColor={theme.primary}
+                    textColor={theme.text}
+                    placeholderTextColor={theme.textSecondary}
+                    theme={{ colors: { background: theme.card, text: theme.text } }}
                 />
 
                 {/* Category Filter */}
@@ -270,6 +276,7 @@ export default function SonuclarScreen() {
                             onPress={() => setSelectedCategory(null)}
                             style={styles.filterChip}
                             textStyle={styles.filterChipText}
+                            mode={selectedCategory === null ? 'flat' : 'outlined'}
                         >
                             Tümü
                         </Chip>
@@ -280,6 +287,7 @@ export default function SonuclarScreen() {
                                 onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
                                 style={styles.filterChip}
                                 textStyle={styles.filterChipText}
+                                mode={selectedCategory === cat ? 'flat' : 'outlined'}
                             >
                                 {cat}
                             </Chip>
@@ -292,45 +300,45 @@ export default function SonuclarScreen() {
                 data={filteredMatches}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => (
-                    <ResultCard match={item} onPress={() => handleViewDetail(item.id)} />
+                    <ResultCard match={item} onPress={() => handleViewDetail(item.id)} styles={styles} theme={theme} />
                 )}
                 contentContainerStyle={[
                     styles.listContent,
                     filteredMatches.length === 0 && styles.emptyListContent
                 ]}
                 showsVerticalScrollIndicator={false}
-                ListEmptyComponent={<EmptyState />}
+                ListEmptyComponent={<EmptyState styles={styles} theme={theme} />}
             />
         </SafeAreaView>
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6B7280',
+        color: theme.textSecondary,
     },
     headerSurface: {
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 16,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.headerBackground || theme.primary,
     },
     headerTitle: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.headerText || '#FFFFFF',
     },
     headerSubtitle: {
         fontSize: 14,
@@ -339,7 +347,7 @@ const styles = StyleSheet.create({
     },
     searchInput: {
         marginTop: 12,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         borderRadius: 12,
     },
     filterScrollView: {
@@ -349,8 +357,9 @@ const styles = StyleSheet.create({
         gap: 8,
     },
     filterChip: {
-        backgroundColor: 'rgba(255,255,255,0.2)',
+        backgroundColor: 'rgba(255,255,255,0.15)', // Glassy effect on blue header
         borderRadius: 20,
+        borderColor: 'rgba(255,255,255,0.3)',
     },
     filterChipText: {
         fontSize: 12,
@@ -368,7 +377,7 @@ const styles = StyleSheet.create({
     card: {
         marginBottom: 12,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -387,21 +396,24 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     leagueChip: {
-        backgroundColor: '#E8F0FE',
+        backgroundColor: theme.tagBackground,
         borderRadius: 20,
+        borderColor: theme.tagBorder,
+        borderWidth: 1,
     },
     completedChip: {
-        backgroundColor: '#D1FAE5',
+        backgroundColor: theme.successLight, // Keep pastel or adapt
         borderRadius: 20,
     },
     chipText: {
         fontSize: 11,
         fontWeight: '600',
+        color: theme.tagText,
     },
     completedChipText: {
         fontSize: 11,
         fontWeight: '600',
-        color: '#10B981',
+        color: theme.success, // #10B981
     },
     resultContainer: {
         flexDirection: 'row',
@@ -417,12 +429,12 @@ const styles = StyleSheet.create({
     teamName: {
         fontSize: 15,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
         textAlign: 'center',
         marginTop: 8,
     },
     winnerTeam: {
-        color: '#10B981',
+        color: theme.success,
         fontWeight: '700',
     },
     scoreContainer: {
@@ -433,11 +445,11 @@ const styles = StyleSheet.create({
     scoreText: {
         fontSize: 32,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
     },
     drawText: {
         fontSize: 11,
-        color: '#F59E0B',
+        color: theme.warning,
         fontWeight: '600',
         marginTop: 4,
     },
@@ -448,7 +460,7 @@ const styles = StyleSheet.create({
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: theme.divider,
     },
     infoItem: {
         flexDirection: 'row',
@@ -457,12 +469,12 @@ const styles = StyleSheet.create({
     },
     infoText: {
         fontSize: 13,
-        color: '#6B7280',
+        color: theme.textSecondary,
         fontWeight: '500',
     },
     shareButton: {
         marginTop: 16,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.primary,
         borderRadius: 12,
     },
     shareButtonLabel: {
@@ -476,12 +488,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
         marginTop: 20,
     },
     emptySubtitle: {
         fontSize: 15,
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginTop: 8,
         lineHeight: 22,
     },
@@ -498,7 +510,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     winnerText: {
-        color: '#10B981',
+        color: theme.success,
         fontWeight: '700',
     },
     scoreSection: {
@@ -508,15 +520,15 @@ const styles = StyleSheet.create({
     score: {
         fontSize: 32,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
     },
     winnerScore: {
-        color: '#10B981',
+        color: theme.success,
     },
     scoreSeparator: {
         fontSize: 24,
         fontWeight: '600',
-        color: '#9CA3AF',
+        color: theme.textLight,
         marginHorizontal: 8,
     },
     matchInfo: {
@@ -526,7 +538,7 @@ const styles = StyleSheet.create({
         marginTop: 16,
         paddingTop: 16,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: theme.divider,
     },
     detailHint: {
         flexDirection: 'row',
@@ -535,11 +547,11 @@ const styles = StyleSheet.create({
         marginTop: 16,
         paddingTop: 12,
         borderTopWidth: 1,
-        borderTopColor: '#F3F4F6',
+        borderTopColor: theme.divider,
     },
     detailHintText: {
         fontSize: 13,
-        color: '#2962FF',
+        color: theme.primary,
         fontWeight: '600',
     },
 });

@@ -6,13 +6,13 @@ import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
+import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
-import { useColorScheme } from '@/components/useColorScheme';
 import { darkTheme, lightTheme } from '@/constants/theme';
-import { AppProvider } from '@/context/AppContext';
+import { AppProvider, useAppContext } from '@/context/AppContext';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -48,24 +48,36 @@ export default function RootLayout() {
     return null;
   }
 
-  return <RootLayoutNav />;
-}
-
-function RootLayoutNav() {
-  const colorScheme = useColorScheme();
-  const paperTheme = colorScheme === 'dark' ? darkTheme : lightTheme;
-
   return (
     <AppProvider>
-      <PaperProvider theme={paperTheme}>
-        <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-          <Stack>
-            <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-            <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-          </Stack>
-        </ThemeProvider>
-      </PaperProvider>
+      <AppNavigator />
     </AppProvider>
   );
 }
 
+function AppNavigator() {
+  const { isDarkMode } = useAppContext();
+  const paperTheme = isDarkMode ? darkTheme : lightTheme;
+
+  return (
+    <PaperProvider theme={paperTheme}>
+      <ThemeProvider value={isDarkMode ? DarkTheme : DefaultTheme}>
+        <Stack
+          screenOptions={{
+            headerStyle: {
+              backgroundColor: isDarkMode ? '#1E293B' : '#2962FF',
+            },
+            headerTintColor: '#FFFFFF',
+            headerTitleStyle: {
+              fontWeight: 'bold',
+            },
+          }}
+        >
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+        </Stack>
+        <StatusBar style={isDarkMode ? 'light' : 'dark'} />
+      </ThemeProvider>
+    </PaperProvider>
+  );
+}

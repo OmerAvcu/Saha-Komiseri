@@ -1,8 +1,9 @@
+import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import { CategoryRule } from '@/types/settings';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import {
     ActivityIndicator,
@@ -17,9 +18,10 @@ import {
     TextInput
 } from 'react-native-paper';
 
+
 export default function CategoriesScreen() {
     const router = useRouter();
-    const { settings, isLoading, addCategory, updateCategory, deleteCategory } = useAppContext();
+    const { settings, isLoading, addCategory, updateCategory, deleteCategory, theme } = useAppContext();
 
     const [modalVisible, setModalVisible] = useState(false);
     const [editingCategory, setEditingCategory] = useState<CategoryRule | null>(null);
@@ -31,6 +33,15 @@ export default function CategoriesScreen() {
     });
 
     const categories = settings?.categories || [];
+    const styles = useMemo(() => createStyles(theme), [theme]);
+
+    const inputTheme = useMemo(() => ({
+        colors: {
+            background: theme.inputBackground,
+            text: theme.text,
+            placeholder: theme.textSecondary,
+        }
+    }), [theme]);
 
     const openAddModal = () => {
         setEditingCategory(null);
@@ -112,7 +123,7 @@ export default function CategoriesScreen() {
             <Card.Content style={styles.cardContent}>
                 <View style={styles.cardLeft}>
                     <View style={styles.iconContainer}>
-                        <MaterialCommunityIcons name="tag" size={24} color="#1a73e8" />
+                        <MaterialCommunityIcons name="tag" size={24} color={theme.primary} />
                     </View>
                     <View style={styles.textContainer}>
                         <Text style={styles.categoryName}>{item.name}</Text>
@@ -130,13 +141,13 @@ export default function CategoriesScreen() {
                     <IconButton
                         icon="pencil"
                         size={20}
-                        iconColor="#6b7280"
+                        iconColor={theme.textSecondary}
                         onPress={() => openEditModal(item)}
                     />
                     <IconButton
                         icon="delete"
                         size={20}
-                        iconColor="#ef4444"
+                        iconColor={theme.error}
                         onPress={() => handleDelete(item)}
                     />
                 </View>
@@ -147,7 +158,7 @@ export default function CategoriesScreen() {
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1a73e8" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={styles.loadingText}>Yükleniyor...</Text>
             </View>
         );
@@ -158,8 +169,9 @@ export default function CategoriesScreen() {
             <Stack.Screen
                 options={{
                     title: 'Kategoriler',
-                    headerStyle: { backgroundColor: '#1a73e8' },
+                    headerStyle: { backgroundColor: theme.primary },
                     headerTintColor: '#ffffff',
+                    headerTitleStyle: { color: '#ffffff' },
                 }}
             />
 
@@ -180,7 +192,7 @@ export default function CategoriesScreen() {
                     ItemSeparatorComponent={() => <View style={styles.separator} />}
                     ListEmptyComponent={
                         <View style={styles.emptyContainer}>
-                            <MaterialCommunityIcons name="tag-off" size={64} color="#9ca3af" />
+                            <MaterialCommunityIcons name="tag-off" size={64} color={theme.textSecondary} />
                             <Text style={styles.emptyTitle}>Kategori Yok</Text>
                             <Text style={styles.emptySubtitle}>
                                 Yeni kategori eklemek için + butonuna basın.
@@ -214,10 +226,11 @@ export default function CategoriesScreen() {
                             style={styles.input}
                             mode="outlined"
                             placeholder="Örn: U14"
-                            textColor="#000000"
-                            placeholderTextColor="#666666"
-                            outlineColor="#cccccc"
-                            activeOutlineColor="#1a73e8"
+                            textColor={theme.text}
+                            placeholderTextColor={theme.textSecondary}
+                            outlineColor={theme.border}
+                            activeOutlineColor={theme.primary}
+                            theme={inputTheme}
                         />
 
                         <TextInput
@@ -228,10 +241,11 @@ export default function CategoriesScreen() {
                             mode="outlined"
                             keyboardType="numeric"
                             placeholder="Örn: 35"
-                            textColor="#000000"
-                            placeholderTextColor="#666666"
-                            outlineColor="#cccccc"
-                            activeOutlineColor="#1a73e8"
+                            textColor={theme.text}
+                            placeholderTextColor={theme.textSecondary}
+                            outlineColor={theme.border}
+                            activeOutlineColor={theme.primary}
+                            theme={inputTheme}
                         />
 
                         <TextInput
@@ -242,10 +256,11 @@ export default function CategoriesScreen() {
                             mode="outlined"
                             keyboardType="numeric"
                             placeholder="Örn: 5"
-                            textColor="#000000"
-                            placeholderTextColor="#666666"
-                            outlineColor="#cccccc"
-                            activeOutlineColor="#1a73e8"
+                            textColor={theme.text}
+                            placeholderTextColor={theme.textSecondary}
+                            outlineColor={theme.border}
+                            activeOutlineColor={theme.primary}
+                            theme={inputTheme}
                         />
 
                         <TextInput
@@ -255,10 +270,11 @@ export default function CategoriesScreen() {
                             style={styles.input}
                             mode="outlined"
                             placeholder="Örn: 14 yaş altı maçlar"
-                            textColor="#000000"
-                            placeholderTextColor="#666666"
-                            outlineColor="#cccccc"
-                            activeOutlineColor="#1a73e8"
+                            textColor={theme.text}
+                            placeholderTextColor={theme.textSecondary}
+                            outlineColor={theme.border}
+                            activeOutlineColor={theme.primary}
+                            theme={inputTheme}
                         />
 
                         <View style={styles.modalActions}>
@@ -266,6 +282,7 @@ export default function CategoriesScreen() {
                                 mode="outlined"
                                 onPress={() => setModalVisible(false)}
                                 style={styles.modalButton}
+                                textColor={theme.textSecondary}
                             >
                                 İptal
                             </Button>
@@ -284,35 +301,35 @@ export default function CategoriesScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: theme.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6b7280',
+        color: theme.textSecondary,
     },
     headerSurface: {
         padding: 16,
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.card,
         marginBottom: 8,
     },
     headerTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#1f2937',
+        color: theme.text,
     },
     headerSubtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: theme.textSecondary,
         marginTop: 4,
     },
     listContent: {
@@ -324,7 +341,7 @@ const styles = StyleSheet.create({
     },
     card: {
         borderRadius: 12,
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.card,
     },
     cardContent: {
         flexDirection: 'row',
@@ -340,7 +357,7 @@ const styles = StyleSheet.create({
         width: 48,
         height: 48,
         borderRadius: 24,
-        backgroundColor: '#e8f0fe',
+        backgroundColor: theme.tagBackground,
         justifyContent: 'center',
         alignItems: 'center',
         marginRight: 12,
@@ -351,16 +368,16 @@ const styles = StyleSheet.create({
     categoryName: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1f2937',
+        color: theme.text,
     },
     categoryRules: {
         fontSize: 14,
-        color: '#1a73e8',
+        color: theme.primary,
         marginTop: 2,
     },
     categoryDescription: {
         fontSize: 12,
-        color: '#6b7280',
+        color: theme.textSecondary,
         marginTop: 2,
     },
     cardRight: {
@@ -374,12 +391,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#1f2937',
+        color: theme.text,
         marginTop: 16,
     },
     emptySubtitle: {
         fontSize: 14,
-        color: '#6b7280',
+        color: theme.textSecondary,
         marginTop: 8,
         textAlign: 'center',
     },
@@ -388,10 +405,10 @@ const styles = StyleSheet.create({
         margin: 16,
         right: 0,
         bottom: 0,
-        backgroundColor: '#1a73e8',
+        backgroundColor: theme.primary,
     },
     modalContainer: {
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.card,
         margin: 20,
         padding: 20,
         borderRadius: 12,
@@ -399,12 +416,12 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 20,
         fontWeight: 'bold',
-        color: '#1f2937',
+        color: theme.text,
         marginBottom: 16,
     },
     input: {
         marginBottom: 12,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: theme.inputBackground,
     },
     modalActions: {
         flexDirection: 'row',
@@ -414,8 +431,9 @@ const styles = StyleSheet.create({
     },
     modalButton: {
         minWidth: 100,
+        borderColor: theme.border,
     },
     saveButton: {
-        backgroundColor: '#1a73e8',
+        backgroundColor: theme.primary,
     },
 });

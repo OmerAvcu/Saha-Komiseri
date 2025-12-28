@@ -1,8 +1,9 @@
+import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent, MatchEventType } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, AppState, FlatList, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
@@ -43,7 +44,7 @@ interface LiveMatchState {
 }
 
 export default function CanliTakipScreen() {
-    const { getScheduledMatches, getLiveMatches, getMatchById, updateMatch, isLoading } = useAppContext();
+    const { getScheduledMatches, getLiveMatches, getMatchById, updateMatch, isLoading, theme, isDarkMode } = useAppContext();
 
     // Active match state
     const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -65,6 +66,9 @@ export default function CanliTakipScreen() {
         playerOut: '',
         playerIn: '',
     });
+
+    // Dynamic styles
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     const scheduledMatches = getScheduledMatches();
     const liveMatches = getLiveMatches();
@@ -259,6 +263,7 @@ export default function CanliTakipScreen() {
                 ...activeMatch,
                 homeScore,
                 awayScore,
+                awayScore,
                 events: [newEvent, ...(activeMatch.events || [])],
                 currentMinute: minute,
             };
@@ -418,15 +423,15 @@ export default function CanliTakipScreen() {
     const getEventDisplay = (event: MatchEvent) => {
         switch (event.type) {
             case 'goal':
-                return { icon: 'soccer', color: '#10b981', label: 'GOL' };
+                return { icon: 'soccer', color: theme.success, label: 'GOL' }; // Using theme.success
             case 'yellowCard':
-                return { icon: 'card', color: '#f59e0b', label: 'SARI KART' };
+                return { icon: 'card', color: theme.warning, label: 'SARI KART' }; // Using theme.warning
             case 'redCard':
-                return { icon: 'card', color: '#ef4444', label: 'KIRMIZI KART' };
+                return { icon: 'card', color: theme.error, label: 'KIRMIZI KART' }; // Using theme.error
             case 'substitution':
-                return { icon: 'swap-horizontal', color: '#3b82f6', label: 'DEĞİŞİKLİK' };
+                return { icon: 'swap-horizontal', color: theme.primary, label: 'DEĞİŞİKLİK' };
             default:
-                return { icon: 'circle', color: '#6b7280', label: event.type };
+                return { icon: 'circle', color: theme.textSecondary, label: event.type };
         }
     };
 
@@ -434,7 +439,7 @@ export default function CanliTakipScreen() {
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1a73e8" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={styles.loadingText}>Yükleniyor...</Text>
             </View>
         );
@@ -455,7 +460,7 @@ export default function CanliTakipScreen() {
 
                 {availableMatches.length === 0 ? (
                     <View style={styles.emptyContainer}>
-                        <MaterialCommunityIcons name="whistle" size={64} color="#9ca3af" />
+                        <MaterialCommunityIcons name="whistle" size={64} color={theme.textSecondary} />
                         <Text style={styles.emptyTitle}>Maç Bulunamadı</Text>
                         <Text style={styles.emptySubtitle}>
                             Önce "Maçlar" sekmesinden yeni bir maç ekleyin.
@@ -484,6 +489,7 @@ export default function CanliTakipScreen() {
                                         onPress={() => handleStartMatch(item)}
                                         style={styles.startButton}
                                         icon="play"
+                                        labelStyle={{ color: '#FFFFFF' }} // Always white text on primary button
                                     >
                                         Canlı Takibi Başlat
                                     </Button>
@@ -530,7 +536,7 @@ export default function CanliTakipScreen() {
                     onPress={handleCancelMatch}
                     icon="arrow-left"
                     style={styles.backButton}
-                    textColor="#6b7280"
+                    textColor={theme.textSecondary}
                 >
                     Geri
                 </Button>
@@ -538,7 +544,8 @@ export default function CanliTakipScreen() {
                     mode={isRunning ? 'outlined' : 'contained'}
                     onPress={toggleStopwatch}
                     icon={isRunning ? 'pause' : 'play'}
-                    style={styles.controlButton}
+                    textColor={isRunning ? theme.primary : '#FFFFFF'}
+                    style={[styles.controlButton, !isRunning && { backgroundColor: theme.primary }]}
                 >
                     {isRunning ? 'Durdur' : 'Başlat'}
                 </Button>
@@ -547,7 +554,7 @@ export default function CanliTakipScreen() {
                     onPress={handleEndMatch}
                     icon="flag-checkered"
                     style={styles.controlButton}
-                    textColor="#ef4444"
+                    textColor={theme.error}
                 >
                     Bitir
                 </Button>
@@ -615,7 +622,7 @@ export default function CanliTakipScreen() {
                                     <IconButton
                                         icon="delete"
                                         size={20}
-                                        iconColor="#EF4444"
+                                        iconColor={theme.error}
                                         onPress={() => handleDeleteEvent(event)}
                                     />
                                 </View>
@@ -646,9 +653,10 @@ export default function CanliTakipScreen() {
                         style={styles.input}
                         mode="outlined"
                         keyboardType="numeric"
-                        textColor="#000000"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={{ colors: { background: theme.inputBackground, text: theme.text } }} // Override Paper input theme
                     />
 
                     <Text style={styles.teamSelectLabel}>Takım Seçin</Text>
@@ -692,10 +700,11 @@ export default function CanliTakipScreen() {
                                 style={styles.input}
                                 mode="outlined"
                                 placeholder="Forma No / Ad"
-                                textColor="#000000"
-                                placeholderTextColor="#666666"
-                                outlineColor="#cccccc"
-                                activeOutlineColor="#1a73e8"
+                                textColor={theme.text}
+                                placeholderTextColor={theme.textSecondary}
+                                outlineColor={theme.border}
+                                activeOutlineColor={theme.primary}
+                                theme={{ colors: { background: theme.inputBackground, text: theme.text } }}
                             />
                             <TextInput
                                 label="Giren Oyuncu"
@@ -704,10 +713,11 @@ export default function CanliTakipScreen() {
                                 style={styles.input}
                                 mode="outlined"
                                 placeholder="Forma No / Ad"
-                                textColor="#000000"
-                                placeholderTextColor="#666666"
-                                outlineColor="#cccccc"
-                                activeOutlineColor="#1a73e8"
+                                textColor={theme.text}
+                                placeholderTextColor={theme.textSecondary}
+                                outlineColor={theme.border}
+                                activeOutlineColor={theme.primary}
+                                theme={{ colors: { background: theme.inputBackground, text: theme.text } }}
                             />
                         </>
                     ) : (
@@ -718,10 +728,11 @@ export default function CanliTakipScreen() {
                             style={styles.input}
                             mode="outlined"
                             placeholder="Forma No / Ad"
-                            textColor="#000000"
-                            placeholderTextColor="#666666"
-                            outlineColor="#cccccc"
-                            activeOutlineColor="#1a73e8"
+                            textColor={theme.text}
+                            placeholderTextColor={theme.textSecondary}
+                            outlineColor={theme.border}
+                            activeOutlineColor={theme.primary}
+                            theme={{ colors: { background: theme.inputBackground, text: theme.text } }}
                         />
                     )}
 
@@ -730,6 +741,7 @@ export default function CanliTakipScreen() {
                             mode="outlined"
                             onPress={() => setModalVisible(false)}
                             style={styles.modalButton}
+                            textColor={theme.textSecondary}
                         >
                             İptal
                         </Button>
@@ -747,32 +759,32 @@ export default function CanliTakipScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6B7280',
+        color: theme.textSecondary,
     },
     headerSurface: {
         paddingHorizontal: 20,
         paddingTop: 20,
         paddingBottom: 16,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.headerBackground || theme.primary,
     },
     headerTitle: {
         fontSize: 24,
         fontWeight: '700',
-        color: '#FFFFFF',
+        color: theme.headerText || '#FFFFFF',
     },
     headerSubtitle: {
         fontSize: 14,
@@ -787,7 +799,7 @@ const styles = StyleSheet.create({
     matchCard: {
         marginBottom: 12,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -806,16 +818,16 @@ const styles = StyleSheet.create({
     matchTeams: {
         fontSize: 17,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
     },
     matchDetails: {
         fontSize: 13,
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginTop: 6,
         fontWeight: '500',
     },
     startButton: {
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.primary,
         flex: 1,
         marginHorizontal: 8,
         borderRadius: 12,
@@ -829,12 +841,12 @@ const styles = StyleSheet.create({
     emptyTitle: {
         fontSize: 20,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
         marginTop: 20,
     },
     emptySubtitle: {
         fontSize: 15,
-        color: '#6B7280',
+        color: theme.textSecondary,
         textAlign: 'center',
         marginTop: 8,
         lineHeight: 22,
@@ -850,10 +862,10 @@ const styles = StyleSheet.create({
         marginTop: 16,
         marginBottom: 12,
         borderRadius: 20,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.headerBackground || theme.primary,
         ...Platform.select({
             ios: {
-                shadowColor: '#2962FF',
+                shadowColor: theme.primary,
                 shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 0.35,
                 shadowRadius: 12,
@@ -896,7 +908,7 @@ const styles = StyleSheet.create({
         borderRadius: 20,
     },
     liveChip: {
-        backgroundColor: '#EF4444',
+        backgroundColor: theme.error,
     },
     statusChipText: {
         color: '#FFFFFF',
@@ -925,7 +937,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
         padding: 16,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -941,7 +953,7 @@ const styles = StyleSheet.create({
     actionsTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginBottom: 14,
         letterSpacing: 1.5,
         textTransform: 'uppercase',
@@ -971,7 +983,13 @@ const styles = StyleSheet.create({
         }),
     },
     goalButton: {
-        backgroundColor: '#D1FAE5',
+        backgroundColor: '#D1FAE5', // Keep these light pastel for contrast, or adapt? Dark mode these might be too bright.
+        // For dark mode, maybe darker shades?
+        // Let's use hardcoded for now, or use theme mix.
+        // If theme is dark, use different? 
+        // For safety, I'll valid check.
+        // But for now, let's keep pastel as buttons often have fixed nice colors. 
+        // Better: use theme specific logic or opacity.
     },
     yellowButton: {
         backgroundColor: '#FEF3C7',
@@ -985,6 +1003,7 @@ const styles = StyleSheet.create({
     actionIcon: {
         fontSize: 32,
         marginBottom: 6,
+        color: '#000000', // Icons on pastel buttons usually black
     },
     actionLabel: {
         fontSize: 12,
@@ -998,7 +1017,7 @@ const styles = StyleSheet.create({
         marginBottom: 16,
         padding: 16,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -1014,7 +1033,7 @@ const styles = StyleSheet.create({
     eventLogTitle: {
         fontSize: 11,
         fontWeight: '700',
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginBottom: 14,
         letterSpacing: 1.5,
         textTransform: 'uppercase',
@@ -1024,7 +1043,7 @@ const styles = StyleSheet.create({
     },
     noEventsText: {
         fontSize: 14,
-        color: '#9CA3AF',
+        color: theme.textSecondary,
         textAlign: 'center',
         paddingVertical: 24,
     },
@@ -1033,7 +1052,7 @@ const styles = StyleSheet.create({
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: theme.divider,
     },
     eventMinute: {
         width: 42,
@@ -1054,16 +1073,16 @@ const styles = StyleSheet.create({
     eventLabel: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#121212',
+        color: theme.text,
     },
     eventInfo: {
         fontSize: 12,
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginTop: 3,
     },
     // Modal
     modalContainer: {
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.surface,
         margin: 20,
         padding: 24,
         borderRadius: 20,
@@ -1071,18 +1090,18 @@ const styles = StyleSheet.create({
     modalTitle: {
         fontSize: 22,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
         marginBottom: 20,
     },
     input: {
         marginBottom: 14,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.inputBackground,
         borderRadius: 12,
     },
     teamSelectLabel: {
         fontSize: 12,
         fontWeight: '600',
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginBottom: 10,
         marginLeft: 4,
     },
@@ -1097,22 +1116,22 @@ const styles = StyleSheet.create({
         paddingHorizontal: 8,
         borderRadius: 12,
         borderWidth: 2,
-        borderColor: '#E5E7EB',
-        backgroundColor: '#F5F7FA',
+        borderColor: theme.inputBorder,
+        backgroundColor: theme.inputBackground,
         alignItems: 'center',
     },
     teamSelectActive: {
-        borderColor: '#2962FF',
-        backgroundColor: '#E8F0FE',
+        borderColor: theme.primary,
+        backgroundColor: theme.inputBackground, // Or a tinted background if possible, but keep simple
     },
     teamSelectText: {
         fontSize: 14,
         fontWeight: '500',
-        color: '#6B7280',
+        color: theme.textSecondary,
         textAlign: 'center',
     },
     teamSelectTextActive: {
-        color: '#2962FF',
+        color: theme.primary,
         fontWeight: '700',
     },
     modalActions: {
@@ -1126,6 +1145,6 @@ const styles = StyleSheet.create({
         borderRadius: 12,
     },
     saveButton: {
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.primary,
     },
 });

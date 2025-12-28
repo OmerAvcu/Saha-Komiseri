@@ -1,19 +1,56 @@
-const tintColorLight = '#1a73e8';
-const tintColorDark = '#4a90e8';
-
-export default {
+export const Colors = {
   light: {
-    text: '#1f2937',
-    background: '#f8f9fa',
-    tint: tintColorLight,
-    tabIconDefault: '#9ca3af',
-    tabIconSelected: tintColorLight,
+    background: '#F5F7FA',
+    surface: '#FFFFFF',
+    text: '#1F2937',
+    textSecondary: '#6B7280',
+    primary: '#2962FF',
+    border: '#E5E7EB',
+    error: '#EF4444',
+    success: '#10B981',
+    warning: '#F59E0B',
+    card: '#FFFFFF',
+    headerBackground: '#2962FF',
+    headerText: '#FFFFFF',
+    tabBarActive: '#2962FF',
+    tabBarInactive: '#9CA3AF',
+    inputBackground: '#F9FAFB',
+    inputBorder: '#D1D5DB',
+    divider: '#E5E7EB',
+    statusBar: 'dark',
+    // Added for chips/tags
+    tagBackground: '#EFF6FF',
+    tagText: '#1E40AF',
+    tagBorder: '#DBEAFE',
+    textLight: '#9CA3AF',
+    successLight: '#DCFCE7',
   },
   dark: {
-    text: '#f9fafb',
-    background: '#111827',
-    tint: tintColorDark,
-    tabIconDefault: '#6b7280',
-    tabIconSelected: tintColorDark,
-  },
+    background: '#0F172A',
+    surface: '#1E293B',
+    text: '#F9FAFB',
+    textSecondary: '#9CA3AF',
+    primary: '#3B82F6',
+    border: '#374151',
+    error: '#EF4444',
+    success: '#10B981',
+    warning: '#F59E0B',
+    card: '#1E293B',
+    headerBackground: '#1E293B',
+    headerText: '#FFFFFF',
+    tabBarActive: '#60A5FA',
+    tabBarInactive: '#6B7280',
+    inputBackground: '#334155',
+    inputBorder: '#4B5563',
+    divider: '#374151',
+    statusBar: 'light',
+    // Added for chips/tags - Adjusted for high contrast in dark mode
+    tagBackground: '#334155',
+    tagText: '#F9FAFB',
+    tagBorder: '#475569',
+    textLight: '#CBD5E1',
+    successLight: '#065F46',
+  }
 };
+
+export type ThemeColors = typeof Colors.light;

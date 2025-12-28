@@ -1,49 +1,6 @@
+import { Colors } from '@/constants/Colors';
 import { Platform, StyleSheet } from 'react-native';
 import { MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
-
-// Modern Sports App Color Palette
-export const PRIMARY_ROYAL_BLUE = '#2962FF';
-export const PRIMARY_BLUE_LIGHT = '#768FFF';
-export const PRIMARY_BLUE_DARK = '#0039CB';
-
-export const Colors = {
-    // Primary
-    primary: PRIMARY_ROYAL_BLUE,
-    primaryLight: PRIMARY_BLUE_LIGHT,
-    primaryDark: PRIMARY_BLUE_DARK,
-
-    // Backgrounds
-    background: '#F5F7FA', // Soft gray background
-    surface: '#FFFFFF',
-    cardBackground: '#FFFFFF',
-
-    // Text
-    text: '#121212', // Dark anthracite
-    textSecondary: '#6B7280', // Medium gray
-    textLight: '#9CA3AF',
-    textOnPrimary: '#FFFFFF',
-
-    // Borders & Dividers
-    border: '#E5E7EB',
-    divider: '#F3F4F6',
-
-    // Semantic
-    success: '#10B981',
-    successLight: '#D1FAE5',
-    error: '#EF4444',
-    errorLight: '#FEE2E2',
-    warning: '#F59E0B',
-    warningLight: '#FEF3C7',
-    live: '#EF4444',
-    liveLight: '#FEE2E2',
-
-    // Category/Tag colors
-    tagBackground: '#E8F0FE',
-    tagText: '#2962FF',
-
-    // WhatsApp green
-    whatsapp: '#25D366',
-};
 
 // Shadow styles for cards and elevated surfaces
 export const Shadows = StyleSheet.create({
@@ -107,55 +64,19 @@ export const BorderRadius = {
     full: 9999,
 };
 
-// Typography
-export const Typography = {
-    h1: {
-        fontSize: 28,
-        fontWeight: '700' as const,
-        color: Colors.text,
-    },
-    h2: {
-        fontSize: 24,
-        fontWeight: '700' as const,
-        color: Colors.text,
-    },
-    h3: {
-        fontSize: 20,
-        fontWeight: '600' as const,
-        color: Colors.text,
-    },
-    body: {
-        fontSize: 16,
-        fontWeight: '400' as const,
-        color: Colors.text,
-    },
-    bodySmall: {
-        fontSize: 14,
-        fontWeight: '400' as const,
-        color: Colors.textSecondary,
-    },
-    caption: {
-        fontSize: 12,
-        fontWeight: '400' as const,
-        color: Colors.textLight,
-    },
-    score: {
-        fontSize: 48,
-        fontWeight: '700' as const,
-        color: Colors.text,
-    },
-};
-
 export const lightTheme = {
     ...MD3LightTheme,
     colors: {
         ...MD3LightTheme.colors,
-        primary: PRIMARY_ROYAL_BLUE,
-        primaryContainer: PRIMARY_BLUE_LIGHT,
-        secondary: PRIMARY_BLUE_DARK,
-        background: Colors.background,
-        surface: Colors.surface,
-        error: Colors.error,
+        primary: Colors.light.primary,
+        onPrimary: '#FFFFFF',
+        primaryContainer: '#BFDBFE', // Light blue container
+        secondary: '#2563EB',
+        background: Colors.light.background,
+        surface: Colors.light.surface,
+        error: Colors.light.error,
+        onSurface: Colors.light.text,
+        outline: Colors.light.border,
     },
 };
 
@@ -163,12 +84,15 @@ export const darkTheme = {
     ...MD3DarkTheme,
     colors: {
         ...MD3DarkTheme.colors,
-        primary: PRIMARY_BLUE_LIGHT,
-        primaryContainer: PRIMARY_ROYAL_BLUE,
-        secondary: PRIMARY_BLUE_LIGHT,
-        background: '#0F172A',
-        surface: '#1E293B',
-        error: Colors.error,
+        primary: Colors.dark.primary,
+        onPrimary: '#FFFFFF',
+        primaryContainer: '#1E40AF', // Darker blue container
+        secondary: '#60A5FA',
+        background: Colors.dark.background,
+        surface: Colors.dark.surface,
+        error: Colors.dark.error,
+        onSurface: Colors.dark.text,
+        outline: Colors.dark.border,
     },
 };
 

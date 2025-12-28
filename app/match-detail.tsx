@@ -1,8 +1,9 @@
+import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React from 'react';
+import React, { useMemo } from 'react';
 import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
 
@@ -80,9 +81,10 @@ ${refereeStaff}
 export default function MatchDetailScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ matchId: string }>();
-    const { getMatchById, isLoading } = useAppContext();
+    const { getMatchById, isLoading, theme } = useAppContext();
 
     const match = params.matchId ? getMatchById(params.matchId) : null;
+    const styles = useMemo(() => createStyles(theme), [theme]);
 
     const handleShareMatch = async () => {
         if (!match) return;
@@ -100,14 +102,14 @@ export default function MatchDetailScreen() {
             case 'yellowCard': return { icon: 'card', color: '#f59e0b', label: 'Sarı Kart' };
             case 'redCard': return { icon: 'card', color: '#ef4444', label: 'Kırmızı Kart' };
             case 'substitution': return { icon: 'swap-horizontal', color: '#3b82f6', label: 'Değişiklik' };
-            default: return { icon: 'circle', color: '#6b7280', label: type };
+            default: return { icon: 'circle', color: theme.textSecondary, label: type };
         }
     };
 
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1a73e8" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={styles.loadingText}>Yükleniyor...</Text>
             </View>
         );
@@ -116,7 +118,7 @@ export default function MatchDetailScreen() {
     if (!match) {
         return (
             <View style={styles.loadingContainer}>
-                <MaterialCommunityIcons name="alert-circle" size={64} color="#ef4444" />
+                <MaterialCommunityIcons name="alert-circle" size={64} color={theme.error} />
                 <Text style={styles.errorText}>Maç bulunamadı</Text>
                 <Button mode="contained" onPress={() => router.back()}>Geri Dön</Button>
             </View>
@@ -130,7 +132,7 @@ export default function MatchDetailScreen() {
             <Stack.Screen
                 options={{
                     title: 'Maç Detayı',
-                    headerStyle: { backgroundColor: '#1a73e8' },
+                    headerStyle: { backgroundColor: theme.primary },
                     headerTintColor: '#ffffff',
                 }}
             />
@@ -140,7 +142,7 @@ export default function MatchDetailScreen() {
                 <Surface style={styles.scoreHeader} elevation={2}>
                     <View style={styles.teamsRow}>
                         <View style={styles.teamContainer}>
-                            <MaterialCommunityIcons name="shield" size={32} color="#1a73e8" />
+                            <MaterialCommunityIcons name="shield" size={32} color="#ffffff" />
                             <Text style={styles.teamName} numberOfLines={2}>{match.homeTeam}</Text>
                         </View>
 
@@ -156,33 +158,33 @@ export default function MatchDetailScreen() {
                         </View>
 
                         <View style={styles.teamContainer}>
-                            <MaterialCommunityIcons name="shield" size={32} color="#1a73e8" />
+                            <MaterialCommunityIcons name="shield" size={32} color="#ffffff" />
                             <Text style={styles.teamName} numberOfLines={2}>{match.awayTeam}</Text>
                         </View>
                     </View>
 
                     <View style={styles.categoryRow}>
-                        <Chip icon="trophy" style={styles.categoryChip}>{match.league}</Chip>
-                        <Chip icon="tag" style={styles.categoryChip}>{match.category}</Chip>
+                        <Chip icon="trophy" style={styles.categoryChip} textStyle={{ color: '#fff' }}>{match.league}</Chip>
+                        <Chip icon="tag" style={styles.categoryChip} textStyle={{ color: '#fff' }}>{match.category}</Chip>
                     </View>
                 </Surface>
 
                 {/* Match Info Card */}
                 <Card style={styles.card}>
-                    <Card.Title title="Maç Bilgileri" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="information" size={24} color="#1a73e8" />} />
+                    <Card.Title title="Maç Bilgileri" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="information" size={24} color={theme.primary} />} />
                     <Card.Content>
                         <View style={styles.infoRow}>
-                            <MaterialCommunityIcons name="calendar" size={20} color="#6b7280" />
+                            <MaterialCommunityIcons name="calendar" size={20} color={theme.textSecondary} />
                             <Text style={styles.infoLabel}>Tarih:</Text>
                             <Text style={styles.infoValue}>{match.date}</Text>
                         </View>
                         <View style={styles.infoRow}>
-                            <MaterialCommunityIcons name="clock-outline" size={20} color="#6b7280" />
+                            <MaterialCommunityIcons name="clock-outline" size={20} color={theme.textSecondary} />
                             <Text style={styles.infoLabel}>Saat:</Text>
                             <Text style={styles.infoValue}>{match.time}</Text>
                         </View>
                         <View style={styles.infoRow}>
-                            <MaterialCommunityIcons name="stadium" size={20} color="#6b7280" />
+                            <MaterialCommunityIcons name="stadium" size={20} color={theme.textSecondary} />
                             <Text style={styles.infoLabel}>Stadyum:</Text>
                             <Text style={styles.infoValue}>{match.venue || 'Belirtilmedi'}</Text>
                         </View>
@@ -191,7 +193,7 @@ export default function MatchDetailScreen() {
 
                 {/* Referee Staff Card */}
                 <Card style={styles.card}>
-                    <Card.Title title="Hakem Kadrosu" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="whistle" size={24} color="#1a73e8" />} />
+                    <Card.Title title="Hakem Kadrosu" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="whistle" size={24} color={theme.primary} />} />
                     <Card.Content>
                         <View style={styles.infoRow}>
                             <Text style={styles.refLabel}>Orta Hakem:</Text>
@@ -213,7 +215,7 @@ export default function MatchDetailScreen() {
                         )}
                         {match.observer && (
                             <View style={styles.infoRow}>
-                                <MaterialCommunityIcons name="eye" size={16} color="#6b7280" />
+                                <MaterialCommunityIcons name="eye" size={16} color={theme.textSecondary} />
                                 <Text style={styles.refLabel}>Gözlemci:</Text>
                                 <Text style={styles.refValue}>{match.observer}</Text>
                             </View>
@@ -223,7 +225,7 @@ export default function MatchDetailScreen() {
 
                 {/* Event Timeline Card */}
                 <Card style={styles.card}>
-                    <Card.Title title="Olay Akışı" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="timeline-clock" size={24} color="#1a73e8" />} />
+                    <Card.Title title="Olay Akışı" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="timeline-clock" size={24} color={theme.primary} />} />
                     <Card.Content>
                         {sortedEvents.length > 0 ? (
                             sortedEvents.map((event, index) => {
@@ -253,7 +255,7 @@ export default function MatchDetailScreen() {
                             })
                         ) : (
                             <View style={styles.noEventsContainer}>
-                                <MaterialCommunityIcons name="text-box-remove-outline" size={48} color="#9ca3af" />
+                                <MaterialCommunityIcons name="text-box-remove-outline" size={48} color={theme.textSecondary} />
                                 <Text style={styles.noEventsText}>Bu maçta olay kaydı girilmemiştir.</Text>
                             </View>
                         )}
@@ -267,6 +269,7 @@ export default function MatchDetailScreen() {
                     icon="share-variant"
                     style={styles.shareButton}
                     labelStyle={styles.shareButtonLabel}
+                    textColor="#ffffff"
                 >
                     WhatsApp Raporunu Paylaş
                 </Button>
@@ -277,28 +280,28 @@ export default function MatchDetailScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#F5F7FA',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6B7280',
+        color: theme.textSecondary,
     },
     errorText: {
         marginTop: 12,
         marginBottom: 20,
         fontSize: 18,
         fontWeight: '600',
-        color: '#EF4444',
+        color: theme.error,
     },
     scoreHeader: {
         marginHorizontal: 16,
@@ -307,10 +310,10 @@ const styles = StyleSheet.create({
         paddingVertical: 24,
         paddingHorizontal: 20,
         borderRadius: 20,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.primary,
         ...Platform.select({
             ios: {
-                shadowColor: '#2962FF',
+                shadowColor: theme.primary,
                 shadowOffset: { width: 0, height: 6 },
                 shadowOpacity: 0.35,
                 shadowRadius: 12,
@@ -379,7 +382,7 @@ const styles = StyleSheet.create({
         marginHorizontal: 16,
         marginBottom: 12,
         borderRadius: 16,
-        backgroundColor: '#FFFFFF',
+        backgroundColor: theme.card,
         ...Platform.select({
             ios: {
                 shadowColor: '#000',
@@ -395,35 +398,35 @@ const styles = StyleSheet.create({
     cardTitle: {
         fontSize: 16,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
     },
     infoRow: {
         flexDirection: 'row',
         alignItems: 'center',
         paddingVertical: 10,
         borderBottomWidth: 1,
-        borderBottomColor: '#F3F4F6',
+        borderBottomColor: theme.divider,
     },
     infoLabel: {
         fontSize: 14,
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginLeft: 10,
         flex: 1,
     },
     infoValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#121212',
+        color: theme.text,
     },
     refLabel: {
         fontSize: 14,
-        color: '#6B7280',
+        color: theme.textSecondary,
         flex: 1,
     },
     refValue: {
         fontSize: 14,
         fontWeight: '600',
-        color: '#121212',
+        color: theme.text,
     },
     // Timeline Event Row
     eventRow: {
@@ -432,7 +435,7 @@ const styles = StyleSheet.create({
         paddingVertical: 14,
         marginLeft: 20,
         borderLeftWidth: 2,
-        borderLeftColor: '#E5E7EB',
+        borderLeftColor: theme.divider,
         paddingLeft: 20,
     },
     eventMinute: {
@@ -441,7 +444,7 @@ const styles = StyleSheet.create({
         width: 22,
         height: 22,
         borderRadius: 11,
-        backgroundColor: '#2962FF',
+        backgroundColor: theme.primary,
         justifyContent: 'center',
         alignItems: 'center',
     },
@@ -464,21 +467,21 @@ const styles = StyleSheet.create({
     eventLabel: {
         fontSize: 14,
         fontWeight: '700',
-        color: '#121212',
+        color: theme.text,
     },
     eventPlayer: {
         fontSize: 13,
-        color: '#4B5563',
+        color: theme.textSecondary,
         marginTop: 3,
     },
     eventSubstitution: {
         fontSize: 12,
-        color: '#6B7280',
+        color: theme.textSecondary,
         marginTop: 3,
     },
     eventTeam: {
         fontSize: 12,
-        color: '#9CA3AF',
+        color: theme.textLight,
         marginTop: 3,
     },
     noEventsContainer: {
@@ -488,7 +491,7 @@ const styles = StyleSheet.create({
     noEventsText: {
         marginTop: 14,
         fontSize: 14,
-        color: '#6B7280',
+        color: theme.textSecondary,
         textAlign: 'center',
     },
     shareButton: {
@@ -515,4 +518,8 @@ const styles = StyleSheet.create({
     bottomSpacer: {
         height: 40,
     },
+    dateDisplay: {
+        color: theme.text,
+        fontSize: 16
+    }
 });

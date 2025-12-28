@@ -1,21 +1,23 @@
+import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Picker } from '@react-native-picker/picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
     Button,
+    Menu,
     Surface,
     Text,
     TextInput,
+    TouchableRipple,
 } from 'react-native-paper';
 
 export default function MatchFormScreen() {
     const router = useRouter();
     const params = useLocalSearchParams<{ matchId?: string }>();
-    const { settings, addMatch, updateMatch, getMatchById, isLoading, scheduleMatchNotification } = useAppContext();
+    const { settings, addMatch, updateMatch, getMatchById, isLoading, scheduleMatchNotification, theme, isDarkMode } = useAppContext();
 
     const isEditMode = !!params.matchId;
     const existingMatch = isEditMode ? getMatchById(params.matchId!) : null;
@@ -25,6 +27,21 @@ export default function MatchFormScreen() {
     const [selectedTime, setSelectedTime] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [showTimePicker, setShowTimePicker] = useState(false);
+
+    // Menu visibility states
+    const [showLeagueMenu, setShowLeagueMenu] = useState(false);
+    const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+
+    const styles = useMemo(() => createStyles(theme), [theme]);
+    // Stabilization: Memoize the input theme to prevent constant re-creation/animation node issues
+    const inputTheme = useMemo(() => ({
+        colors: {
+            background: theme.inputBackground,
+            text: theme.text,
+            placeholder: theme.textSecondary,
+            onSurfaceVariant: theme.textSecondary,
+        }
+    }), [theme]);
 
     const [formData, setFormData] = useState({
         homeTeam: '',
@@ -58,14 +75,12 @@ export default function MatchFormScreen() {
                     fourthOfficial: existingMatch.fourthOfficial || '',
                     observer: existingMatch.observer || '',
                 });
-                // Parse date safely
                 if (existingMatch.date && existingMatch.date.includes('-')) {
                     const parts = existingMatch.date.split('-').map(Number);
                     if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
                         setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
                     }
                 }
-                // Parse time safely
                 if (existingMatch.time && existingMatch.time.includes(':')) {
                     const timeParts = existingMatch.time.split(':').map(Number);
                     if (timeParts.length >= 2 && !isNaN(timeParts[0]) && !isNaN(timeParts[1])) {
@@ -80,7 +95,6 @@ export default function MatchFormScreen() {
         }
     }, [existingMatch, settings?.categories]);
 
-    // Format date as YYYY-MM-DD
     const formatDate = (date: Date): string => {
         const year = date.getFullYear();
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -88,14 +102,12 @@ export default function MatchFormScreen() {
         return `${year}-${month}-${day}`;
     };
 
-    // Format time as HH:mm
     const formatTime = (date: Date): string => {
         const hours = String(date.getHours()).padStart(2, '0');
         const minutes = String(date.getMinutes()).padStart(2, '0');
         return `${hours}:${minutes}`;
     };
 
-    // Format display date
     const formatDisplayDate = (date: Date): string => {
         const day = String(date.getDate()).padStart(2, '0');
         const month = String(date.getMonth() + 1).padStart(2, '0');
@@ -118,7 +130,6 @@ export default function MatchFormScreen() {
     };
 
     const handleSave = async () => {
-        // Validation
         if (!formData.homeTeam.trim()) {
             Alert.alert('Hata', 'Ev sahibi takım adı gerekli');
             return;
@@ -134,8 +145,6 @@ export default function MatchFormScreen() {
 
         try {
             setSaving(true);
-
-            // Find category name for display
             const selectedCategory = categories.find(c => c.id === formData.category);
 
             const matchData = {
@@ -156,17 +165,13 @@ export default function MatchFormScreen() {
 
             if (isEditMode && params.matchId) {
                 await updateMatch(params.matchId, matchData);
-                // Reschedule notification
                 await scheduleMatchNotification({ ...existingMatch, ...matchData, id: params.matchId } as any);
-
                 Alert.alert('Başarılı', 'Maç başarıyla güncellendi', [
                     { text: 'Tamam', onPress: () => router.back() }
                 ]);
             } else {
                 const newMatch = await addMatch(matchData);
-                // Schedule notification
                 await scheduleMatchNotification(newMatch);
-
                 Alert.alert('Başarılı', 'Maç başarıyla eklendi', [
                     { text: 'Tamam', onPress: () => router.back() }
                 ]);
@@ -179,10 +184,16 @@ export default function MatchFormScreen() {
         }
     };
 
+    const getSelectedCategoryLabel = () => {
+        const cat = categories.find(c => c.id === formData.category);
+        if (!cat) return '';
+        return `${cat.name} (${cat.halfDuration}dk / ${cat.substitutionLimit} değişiklik)`;
+    };
+
     if (isLoading) {
         return (
             <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#1a73e8" />
+                <ActivityIndicator size="large" color={theme.primary} />
                 <Text style={styles.loadingText}>Yükleniyor...</Text>
             </View>
         );
@@ -193,7 +204,7 @@ export default function MatchFormScreen() {
             <Stack.Screen
                 options={{
                     title: isEditMode ? 'Maç Düzenle' : 'Yeni Maç',
-                    headerStyle: { backgroundColor: '#1a73e8' },
+                    headerStyle: { backgroundColor: theme.primary },
                     headerTintColor: '#ffffff',
                 }}
             />
@@ -209,10 +220,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Galatasaray U19"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <TextInput
@@ -222,10 +234,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Fenerbahçe U19"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
                 </Surface>
 
@@ -248,6 +261,7 @@ export default function MatchFormScreen() {
                             mode="date"
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                             onChange={onDateChange}
+                            themeVariant={isDarkMode ? 'dark' : 'light'}
                         />
                     )}
 
@@ -268,6 +282,7 @@ export default function MatchFormScreen() {
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                             onChange={onTimeChange}
                             is24Hour={true}
+                            themeVariant={isDarkMode ? 'dark' : 'light'}
                         />
                     )}
                 </Surface>
@@ -282,46 +297,82 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Florya Tesisleri"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <Text style={styles.pickerLabel}>Lig / Turnuva *</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={formData.league}
-                            onValueChange={(value) => setFormData({ ...formData, league: value })}
-                            style={styles.picker}
-                        >
-                            <Picker.Item label="Seçiniz..." value="" />
-                            {leagues.map((league, index) => (
-                                <Picker.Item
-                                    key={index}
-                                    label={league}
-                                    value={league}
-                                />
-                            ))}
-                        </Picker>
-                    </View>
+                    <Menu
+                        visible={showLeagueMenu}
+                        onDismiss={() => setShowLeagueMenu(false)}
+                        anchor={
+                            <TouchableRipple onPress={() => setShowLeagueMenu(true)}>
+                                <View pointerEvents="none">
+                                    <TextInput
+                                        mode="outlined"
+                                        value={formData.league}
+                                        placeholder="Seçiniz..."
+                                        style={styles.input}
+                                        paddingHorizontal={12} // Fix weird touch target
+                                        right={<TextInput.Icon icon="menu-down" />}
+                                        textColor={theme.text}
+                                        theme={inputTheme}
+                                        outlineColor={theme.border}
+                                        activeOutlineColor={theme.primary}
+                                    />
+                                </View>
+                            </TouchableRipple>
+                        }
+                        contentStyle={{ backgroundColor: theme.card }}
+                    >
+                        <Menu.Item title="Seçiniz..." onPress={() => { setFormData({ ...formData, league: '' }); setShowLeagueMenu(false); }} titleStyle={{ color: theme.text }} />
+                        {leagues.map((league, index) => (
+                            <Menu.Item
+                                key={index}
+                                title={league}
+                                onPress={() => { setFormData({ ...formData, league }); setShowLeagueMenu(false); }}
+                                titleStyle={{ color: theme.text }}
+                            />
+                        ))}
+                    </Menu>
 
                     <Text style={styles.pickerLabel}>Kategori *</Text>
-                    <View style={styles.pickerContainer}>
-                        <Picker
-                            selectedValue={formData.category}
-                            onValueChange={(value) => setFormData({ ...formData, category: value })}
-                            style={styles.picker}
-                        >
-                            {categories.map((category) => (
-                                <Picker.Item
-                                    key={category.id}
-                                    label={`${category.name} (${category.halfDuration}dk / ${category.substitutionLimit} değişiklik)`}
-                                    value={category.id}
-                                />
-                            ))}
-                        </Picker>
-                    </View>
+                    <Menu
+                        visible={showCategoryMenu}
+                        onDismiss={() => setShowCategoryMenu(false)}
+                        anchor={
+                            <TouchableRipple onPress={() => setShowCategoryMenu(true)}>
+                                <View pointerEvents="none">
+                                    <TextInput
+                                        mode="outlined"
+                                        value={getSelectedCategoryLabel()}
+                                        placeholder="Seçiniz..."
+                                        style={styles.input}
+                                        right={<TextInput.Icon icon="menu-down" />}
+                                        textColor={theme.text}
+                                        theme={inputTheme}
+                                        outlineColor={theme.border}
+                                        activeOutlineColor={theme.primary}
+                                    />
+                                </View>
+                            </TouchableRipple>
+                        }
+                        contentStyle={{ backgroundColor: theme.card }}
+                    >
+                        {categories.map((category) => (
+                            <Menu.Item
+                                key={category.id}
+                                title={`${category.name}`}
+                                description={`${category.halfDuration}dk / ${category.substitutionLimit} değiş.`}
+                                onPress={() => { setFormData({ ...formData, category: category.id }); setShowCategoryMenu(false); }}
+                                titleStyle={{ color: theme.text }}
+                                descriptionStyle={{ color: theme.textSecondary }}
+                            />
+                        ))}
+                    </Menu>
                 </Surface>
 
                 <Surface style={styles.formSection} elevation={1}>
@@ -334,10 +385,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Cüneyt Çakır"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <TextInput
@@ -347,10 +399,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Bahattin Duran"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <TextInput
@@ -360,10 +413,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Tarik Ongun"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <TextInput
@@ -373,10 +427,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Opsiyonel"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
 
                     <TextInput
@@ -386,10 +441,11 @@ export default function MatchFormScreen() {
                         style={styles.input}
                         mode="outlined"
                         placeholder="Opsiyonel"
-                        textColor="#000000"
-                        placeholderTextColor="#666666"
-                        outlineColor="#cccccc"
-                        activeOutlineColor="#1a73e8"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
                     />
                 </Surface>
 
@@ -398,7 +454,7 @@ export default function MatchFormScreen() {
                         mode="outlined"
                         onPress={() => router.back()}
                         style={styles.cancelButton}
-                        textColor="#6b7280"
+                        textColor={theme.textSecondary}
                     >
                         İptal
                     </Button>
@@ -417,72 +473,61 @@ export default function MatchFormScreen() {
     );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
+        backgroundColor: theme.background,
     },
     loadingContainer: {
         flex: 1,
         justifyContent: 'center',
         alignItems: 'center',
-        backgroundColor: '#f8f9fa',
+        backgroundColor: theme.background,
     },
     loadingText: {
         marginTop: 12,
         fontSize: 16,
-        color: '#6b7280',
+        color: theme.textSecondary,
     },
     formSection: {
         margin: 16,
         marginBottom: 8,
         padding: 16,
         borderRadius: 12,
-        backgroundColor: '#ffffff',
+        backgroundColor: theme.card,
     },
     sectionTitle: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#1a73e8',
+        color: theme.primary,
         marginBottom: 16,
         textTransform: 'uppercase',
         letterSpacing: 1,
     },
     input: {
         marginBottom: 12,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: theme.inputBackground,
     },
     pickerLabel: {
         fontSize: 12,
-        color: '#666666',
+        color: theme.textSecondary,
         marginBottom: 4,
         marginLeft: 4,
     },
     dateTimeButton: {
         borderWidth: 1,
-        borderColor: '#cccccc',
+        borderColor: theme.inputBorder,
         borderRadius: 4,
-        backgroundColor: '#f9f9f9',
+        backgroundColor: theme.inputBackground,
         paddingVertical: 14,
         paddingHorizontal: 12,
         marginBottom: 12,
     },
     dateTimeButtonText: {
         fontSize: 16,
-        color: '#000000',
+        color: theme.text,
     },
-    pickerContainer: {
-        borderWidth: 1,
-        borderColor: '#cccccc',
-        borderRadius: 4,
-        backgroundColor: '#f9f9f9',
-        marginBottom: 12,
-        overflow: 'hidden',
-    },
-    picker: {
-        height: Platform.OS === 'ios' ? 150 : 50,
-        color: '#000000',
-    },
+    // Removed old picker styles
     buttonContainer: {
         flexDirection: 'row',
         justifyContent: 'flex-end',
@@ -493,10 +538,10 @@ const styles = StyleSheet.create({
     },
     cancelButton: {
         flex: 1,
-        borderColor: '#d1d5db',
+        borderColor: theme.border,
     },
     saveButton: {
         flex: 1,
-        backgroundColor: '#1a73e8',
+        backgroundColor: theme.primary,
     },
 });

@@ -8,141 +8,145 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function AyarlarScreen() {
     const router = useRouter();
-    const { settings, exportData, importData, clearAllData, updateSettings } = useAppContext();
-    const [darkMode, setDarkMode] = React.useState(false);
+    const {
+        settings,
+        exportData,
+        importData,
+        clearAllData,
+        updateSettings,
+        isDarkMode,
+        toggleDarkMode,
+        theme
+    } = useAppContext();
 
     const categoryCount = settings?.categories?.length || 0;
 
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
-            <Surface style={styles.headerSurface} elevation={4}>
-                <Text style={styles.headerTitle}>Ayarlar</Text>
-                <Text style={styles.headerSubtitle}>Uygulama tercihleri ve araçlar</Text>
+        <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]} edges={['top']}>
+            <Surface style={[styles.headerSurface, { backgroundColor: theme.headerBackground }]} elevation={4}>
+                <Text style={[styles.headerTitle, { color: theme.headerText }]}>Ayarlar</Text>
+                <Text style={[styles.headerSubtitle, { color: 'rgba(255,255,255,0.8)' }]}>Uygulama tercihleri ve araçlar</Text>
             </Surface>
             <ScrollView showsVerticalScrollIndicator={false}>
                 {/* Kategori Yönetimi */}
-                <Surface style={styles.section} elevation={1}>
-                    <Text style={styles.sectionTitle}>Kategori Yönetimi</Text>
+                <Surface style={[styles.section, { backgroundColor: theme.card }]} elevation={1}>
+                    <Text style={[styles.sectionTitle, { color: theme.primary }]}>Kategori Yönetimi</Text>
                     <List.Item
                         title="Kategoriler"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description={`${categoryCount} kategori tanımlı - Devre süresi ve değişiklik hakları`}
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="tag-multiple" color="#1a73e8" />
+                            <List.Icon {...props} icon="tag-multiple" color={theme.primary} />
                         )}
                         right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
+                            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                         )}
                         onPress={() => router.push('/categories')}
                     />
                 </Surface>
 
                 {/* Ligler */}
-                <Surface style={styles.section} elevation={1}>
-                    <Text style={styles.sectionTitle}>Ligler</Text>
+                <Surface style={[styles.section, { backgroundColor: theme.card }]} elevation={1}>
+                    <Text style={[styles.sectionTitle, { color: theme.primary }]}>Ligler</Text>
                     <List.Item
                         title="Lig Yönetimi"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description="Ligleri görüntüle ve düzenle"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="format-list-bulleted" color="#1a73e8" />
+                            <List.Icon {...props} icon="format-list-bulleted" color={theme.primary} />
                         )}
                         right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
+                            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                         )}
                         onPress={() => router.push('/leagues')}
                     />
-
                 </Surface>
 
-
-
                 {/* Uygulama Ayarları */}
-                <Surface style={styles.section} elevation={1}>
-                    <Text style={styles.sectionTitle}>Uygulama</Text>
+                <Surface style={[styles.section, { backgroundColor: theme.card }]} elevation={1}>
+                    <Text style={[styles.sectionTitle, { color: theme.primary }]}>Uygulama</Text>
                     <List.Item
                         title="Karanlık Mod"
-                        titleStyle={styles.listTitle}
-                        description="Koyu tema kullan"
-                        descriptionStyle={styles.listDescription}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
+                        description={isDarkMode ? "Açık temaya geç" : "Koyu temaya geç"}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="theme-light-dark" color="#1a73e8" />
+                            <List.Icon {...props} icon="theme-light-dark" color={theme.primary} />
                         )}
                         right={() => (
                             <Switch
-                                value={darkMode}
-                                onValueChange={setDarkMode}
-                                color="#1a73e8"
+                                value={isDarkMode}
+                                onValueChange={toggleDarkMode}
+                                color={theme.primary}
                             />
                         )}
                     />
-                    <Divider />
+                    <Divider style={{ backgroundColor: theme.border }} />
                     <List.Item
                         title="Bildirimler"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description="Maç hatırlatıcıları"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="bell-outline" color="#1a73e8" />
+                            <List.Icon {...props} icon="bell-outline" color={theme.primary} />
                         )}
                         right={() => (
                             <Switch
                                 value={settings?.notificationsEnabled ?? true}
                                 onValueChange={(val) => updateSettings({ notificationsEnabled: val })}
-                                color="#1a73e8"
+                                color={theme.primary}
                             />
                         )}
                     />
-                    <Divider />
+                    <Divider style={{ backgroundColor: theme.border }} />
                     <List.Item
                         title="Hakkında"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description="Saha Komiseri v1.0.0"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="information-outline" color="#1a73e8" />
+                            <List.Icon {...props} icon="information-outline" color={theme.primary} />
                         )}
                         right={() => (
-                            <MaterialCommunityIcons name="chevron-right" size={24} color="#6b7280" />
+                            <MaterialCommunityIcons name="chevron-right" size={24} color={theme.textSecondary} />
                         )}
                     />
-
                 </Surface>
 
                 {/* Veri Yönetimi */}
-                <Surface style={[styles.section, { marginTop: 16 }]} elevation={0}>
-                    <Text style={styles.sectionTitle}>Veri Yönetimi</Text>
+                <Surface style={[styles.section, { backgroundColor: theme.card, marginTop: 16 }]} elevation={0}>
+                    <Text style={[styles.sectionTitle, { color: theme.primary }]}>Veri Yönetimi</Text>
                     <List.Item
                         title="Yedek Al (Dışa Aktar)"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description="Tüm verileri dosyaya kaydet"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="database-export" color="#1a73e8" />
+                            <List.Icon {...props} icon="database-export" color={theme.primary} />
                         )}
                         onPress={exportData}
                     />
-                    <Divider />
+                    <Divider style={{ backgroundColor: theme.border }} />
                     <List.Item
                         title="Yedeği Geri Yükle"
-                        titleStyle={styles.listTitle}
+                        titleStyle={[styles.listTitle, { color: theme.text }]}
                         description="Dosyadan verileri geri yükle"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="database-import" color="#1a73e8" />
+                            <List.Icon {...props} icon="database-import" color={theme.primary} />
                         )}
                         onPress={importData}
                     />
-                    <Divider />
+                    <Divider style={{ backgroundColor: theme.border }} />
                     <List.Item
                         title="Tüm Verileri Temizle"
-                        titleStyle={[styles.listTitle, { color: '#EF4444' }]}
+                        titleStyle={[styles.listTitle, { color: theme.error }]}
                         description="Uygulamayı sıfırla (Geri alınamaz)"
-                        descriptionStyle={styles.listDescription}
+                        descriptionStyle={[styles.listDescription, { color: theme.textSecondary }]}
                         left={(props) => (
-                            <List.Icon {...props} icon="delete-forever" color="#EF4444" />
+                            <List.Icon {...props} icon="delete-forever" color={theme.error} />
                         )}
                         onPress={clearAllData}
                     />
@@ -155,19 +159,16 @@ export default function AyarlarScreen() {
 const styles = StyleSheet.create({
     container: {
         flex: 1,
-        backgroundColor: '#f8f9fa',
     },
     section: {
         marginVertical: 8,
         marginHorizontal: 16,
         borderRadius: 12,
-        backgroundColor: '#ffffff',
         overflow: 'hidden',
     },
     sectionTitle: {
         fontSize: 14,
         fontWeight: 'bold',
-        color: '#1a73e8',
         paddingHorizontal: 16,
         paddingTop: 16,
         paddingBottom: 8,
@@ -177,29 +178,24 @@ const styles = StyleSheet.create({
     listTitle: {
         fontSize: 16,
         fontWeight: '600',
-        color: '#1f2937',
     },
     listDescription: {
         fontSize: 13,
-        color: '#4a4a4a',
         marginTop: 2,
     },
     headerSurface: {
         paddingHorizontal: 20,
         paddingTop: 16,
         paddingBottom: 20,
-        backgroundColor: '#2962FF',
         borderBottomLeftRadius: 0,
         borderBottomRightRadius: 0,
     },
     headerTitle: {
         fontSize: 28,
         fontWeight: 'bold',
-        color: '#FFFFFF',
     },
     headerSubtitle: {
         fontSize: 14,
-        color: 'rgba(255,255,255,0.8)',
         marginTop: 4,
     },
 });
