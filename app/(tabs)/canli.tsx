@@ -41,6 +41,8 @@ interface LiveMatchState {
     pausedAt: number | null; // Elapsed seconds when paused
     isRunning: boolean;
     match: Match;
+    period: 1 | 2 | 3 | 4;
+    injuryTime: number;
 }
 
 export default function CanliTakipScreen() {
@@ -57,6 +59,11 @@ export default function CanliTakipScreen() {
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const activeMatchRef = useRef<Match | null>(null);
     const isRunningRef = useRef<boolean>(false);
+
+    // Injury Time & Period State
+    const [period, setPeriod] = useState<1 | 2 | 3 | 4>(1);
+    const [injuryTime, setInjuryTime] = useState(0);
+    const [showInjuryModal, setShowInjuryModal] = useState(false);
 
     // Keep refs in sync for the AppState listener to avoid effect re-runs
     useEffect(() => {
@@ -129,6 +136,8 @@ export default function CanliTakipScreen() {
                     } else {
                         setElapsedSeconds(state.pausedAt || 0);
                     }
+                    if (state.period) setPeriod(state.period);
+                    if (state.injuryTime) setInjuryTime(state.injuryTime);
                 } else {
                     await AsyncStorage.removeItem(LIVE_MATCH_STORAGE_KEY);
                 }
@@ -148,6 +157,8 @@ export default function CanliTakipScreen() {
                 pausedAt: running ? 0 : elapsed,
                 isRunning: running,
                 match: matchData,
+                period,
+                injuryTime,
             };
             await AsyncStorage.setItem(LIVE_MATCH_STORAGE_KEY, JSON.stringify(state));
         } catch (error) {
@@ -204,11 +215,83 @@ export default function CanliTakipScreen() {
         const newMatch = { ...match, status: 'live' as const, homeScore: 0, awayScore: 0, events: [] };
         setActiveMatch(newMatch);
         setElapsedSeconds(0);
+        setPeriod(1);
+        setInjuryTime(0);
         matchStartTimeRef.current = null;
         pausedSecondsRef.current = 0;
         setIsRunning(false);
         // Pass the new match directly to avoid race condition
         persistLiveMatch(false, 0, newMatch);
+    };
+
+    const handleAddInjuryTime = (minutes: number) => {
+        setInjuryTime(minutes);
+        setShowInjuryModal(false);
+        persistLiveMatch(isRunning, elapsedSeconds);
+    };
+
+    const handleNextPeriod = () => {
+        if (period === 1) {
+            Alert.alert(
+                '2. Devreye Geç',
+                'İkinci devreye geçmek istediğinize emin misiniz? Süre 45:00\'dan devam edecek.',
+                [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                        text: 'Evet, Başlat',
+                        onPress: () => {
+                            setPeriod(2);
+                            setInjuryTime(0);
+                            setElapsedSeconds(45 * 60); // Reset to 45 mins
+                            pausedSecondsRef.current = 45 * 60;
+                            matchStartTimeRef.current = null;
+                            setIsRunning(false);
+                            persistLiveMatch(false, 45 * 60);
+                        }
+                    }
+                ]
+            );
+        } else if (period === 2) {
+            Alert.alert(
+                '1. Uzatma Devresine Geç',
+                'Uzatma devrelerini başlatmak istediğinize emin misiniz? Süre 90:00\'dan devam edecek.',
+                [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                        text: 'Evet, Başlat',
+                        onPress: () => {
+                            setPeriod(3);
+                            setInjuryTime(0);
+                            setElapsedSeconds(90 * 60); // Reset to 90 mins
+                            pausedSecondsRef.current = 90 * 60;
+                            matchStartTimeRef.current = null;
+                            setIsRunning(false);
+                            persistLiveMatch(false, 90 * 60);
+                        }
+                    }
+                ]
+            );
+        } else if (period === 3) {
+            Alert.alert(
+                '2. Uzatma Devresine Geç',
+                'İkinci uzatma devresine geçmek istediğinize emin misiniz? Süre 105:00\'dan devam edecek.',
+                [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                        text: 'Evet, Başlat',
+                        onPress: () => {
+                            setPeriod(4);
+                            setInjuryTime(0);
+                            setElapsedSeconds(105 * 60); // Reset to 105 mins
+                            pausedSecondsRef.current = 105 * 60;
+                            matchStartTimeRef.current = null;
+                            setIsRunning(false);
+                            persistLiveMatch(false, 105 * 60);
+                        }
+                    }
+                ]
+            );
+        }
     };
 
     // Toggle stopwatch
@@ -254,6 +337,21 @@ export default function CanliTakipScreen() {
                 playerOut: formData.playerOut?.trim() || undefined,
                 playerIn: formData.playerIn?.trim() || undefined,
             };
+
+            // Calculate added time (injury time logic)
+            if (period === 1 && minute > 45) {
+                newEvent.minute = 45;
+                newEvent.addedTime = minute - 45;
+            } else if (period === 2 && minute > 90) {
+                newEvent.minute = 90;
+                newEvent.addedTime = minute - 90;
+            } else if (period === 3 && minute > 105) {
+                newEvent.minute = 105;
+                newEvent.addedTime = minute - 105;
+            } else if (period === 4 && minute > 120) {
+                newEvent.minute = 120;
+                newEvent.addedTime = minute - 120;
+            }
 
             // Update scores if goal
             let homeScore = activeMatch.homeScore || 0;
@@ -367,28 +465,56 @@ export default function CanliTakipScreen() {
                     text: 'Bitir',
                     onPress: async () => {
                         if (!activeMatch) return;
-
-                        setIsRunning(false);
-
-                        try {
-                            await updateMatch(activeMatch.id, {
-                                status: 'completed',
-                                homeScore: activeMatch.homeScore,
-                                awayScore: activeMatch.awayScore,
-                                events: activeMatch.events,
-                            });
-                            await clearPersistedMatch();
-                            setActiveMatch(null);
-                            setElapsedSeconds(0);
-                            matchStartTimeRef.current = null;
-                        } catch (error) {
-                            console.error('Error ending match:', error);
-                            Alert.alert('Hata', 'Maç bitirilemedi');
-                        }
+                        await performEndMatch();
                     },
                 },
             ]
         );
+    };
+
+    const performEndMatch = async () => {
+        if (!activeMatch) return;
+
+        setIsRunning(false);
+
+        try {
+            await updateMatch(activeMatch.id, {
+                status: 'completed',
+                homeScore: activeMatch.homeScore,
+                awayScore: activeMatch.awayScore,
+                events: activeMatch.events,
+            });
+            await clearPersistedMatch();
+            setActiveMatch(null);
+            setElapsedSeconds(0);
+            matchStartTimeRef.current = null;
+        } catch (error) {
+            console.error('Error ending match:', error);
+            Alert.alert('Hata', 'Maç bitirilemedi');
+        }
+    };
+
+    const confirmEndMatchOrExtra = () => {
+        if (period === 2) {
+            Alert.alert(
+                'Normal Süre Bitti',
+                'Maçı bitirmek mi istiyorsunuz yoksa uzatma devrelerine mi geçilecek?',
+                [
+                    { text: 'İptal', style: 'cancel' },
+                    {
+                        text: 'Uzatmaya Geç',
+                        onPress: () => handleNextPeriod() // Will trigger P2 -> P3 alert
+                    },
+                    {
+                        text: 'Maçı Bitir',
+                        style: 'destructive',
+                        onPress: performEndMatch
+                    }
+                ]
+            );
+        } else {
+            handleEndMatch();
+        }
     };
 
     // Cancel match - exit without saving
@@ -520,14 +646,34 @@ export default function CanliTakipScreen() {
                 </View>
 
                 <View style={styles.centerSection}>
-                    <Text style={styles.stopwatch}>{formatTime(elapsedSeconds)}</Text>
-                    <Chip
-                        mode={isRunning ? 'flat' : 'outlined'}
-                        style={[styles.statusChip, isRunning && styles.liveChip]}
-                        textStyle={styles.statusChipText}
-                    >
-                        {isRunning ? '● CANLI' : 'DURDURULDU'}
-                    </Chip>
+                    <Text style={[
+                        styles.stopwatch,
+                        (period === 1 && elapsedSeconds > 45 * 60) ||
+                            (period === 2 && elapsedSeconds > 90 * 60) ||
+                            (period === 3 && elapsedSeconds > 105 * 60) ||
+                            (period === 4 && elapsedSeconds > 120 * 60)
+                            ? { color: '#fb923c' } // Orange for injury time
+                            : {}
+                    ]}>
+                        {formatTime(elapsedSeconds)}
+                        {injuryTime > 0 && (
+                            <Text style={{ fontSize: 24, color: '#fb923c' }}>
+                                {` / +${injuryTime}`}
+                            </Text>
+                        )}
+                    </Text>
+                    <View style={{ flexDirection: 'row', gap: 8, marginTop: 8 }}>
+                        <Chip
+                            mode={isRunning ? 'flat' : 'outlined'}
+                            style={[styles.statusChip, isRunning && styles.liveChip]}
+                            textStyle={styles.statusChipText}
+                        >
+                            {isRunning ? '● CANLI' : 'DURDURULDU'}
+                        </Chip>
+                        <Chip mode="outlined" style={styles.statusChip} textStyle={styles.statusChipText}>
+                            {period === 1 ? '1. DEVRE' : period === 2 ? '2. DEVRE' : period === 3 ? '1. UZATMA' : '2. UZATMA'}
+                        </Chip>
+                    </View>
                 </View>
 
                 <View style={styles.teamSection}>
@@ -540,13 +686,46 @@ export default function CanliTakipScreen() {
             <View style={styles.controlRow}>
                 <Button
                     mode="outlined"
-                    onPress={handleCancelMatch}
-                    icon="arrow-left"
-                    style={styles.backButton}
-                    textColor={theme.textSecondary}
+                    onPress={() => setShowInjuryModal(true)}
+                    icon="timer-plus"
+                    style={[styles.controlButton, { borderColor: '#fb923c' }]}
+                    textColor="#fb923c"
                 >
-                    Geri
+                    +{injuryTime > 0 ? injuryTime : ''} Uzatma
                 </Button>
+
+                {period === 1 ? (
+                    <Button
+                        mode="outlined"
+                        onPress={handleNextPeriod}
+                        icon="skip-next"
+                        style={styles.controlButton}
+                        textColor={theme.primary}
+                    >
+                        2. Devre
+                    </Button>
+                ) : period === 3 ? (
+                    <Button
+                        mode="outlined"
+                        onPress={handleNextPeriod}
+                        icon="skip-next"
+                        style={styles.controlButton}
+                        textColor={theme.primary}
+                    >
+                        2. Uzatma
+                    </Button>
+                ) : (
+                    <Button
+                        mode="outlined"
+                        onPress={confirmEndMatchOrExtra}
+                        icon="flag-checkered"
+                        style={styles.controlButton}
+                        textColor={theme.error}
+                    >
+                        Bitir
+                    </Button>
+                )}
+
                 <Button
                     mode={isRunning ? 'outlined' : 'contained'}
                     onPress={toggleStopwatch}
@@ -556,16 +735,27 @@ export default function CanliTakipScreen() {
                 >
                     {isRunning ? 'Durdur' : 'Başlat'}
                 </Button>
-                <Button
-                    mode="outlined"
-                    onPress={handleEndMatch}
-                    icon="flag-checkered"
-                    style={styles.controlButton}
-                    textColor={theme.error}
-                >
-                    Bitir
-                </Button>
             </View>
+
+            {/* Injury Time Modal */}
+            <Portal>
+                <Modal visible={showInjuryModal} onDismiss={() => setShowInjuryModal(false)} contentContainerStyle={styles.modalContainer}>
+                    <Text style={styles.modalTitle}>Uzatma Süresi Ekle</Text>
+                    <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, justifyContent: 'center' }}>
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(min => (
+                            <Button
+                                key={min}
+                                mode="outlined"
+                                onPress={() => handleAddInjuryTime(min)}
+                                style={{ borderColor: theme.primary, minWidth: 60 }}
+                            >
+                                +{min}
+                            </Button>
+                        ))}
+                    </View>
+                    <Button onPress={() => setShowInjuryModal(false)} style={{ marginTop: 16 }}>İptal</Button>
+                </Modal>
+            </Portal>
 
             {/* Action Buttons */}
             <Surface style={styles.actionsContainer} elevation={1}>

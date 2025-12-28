@@ -23,6 +23,7 @@ export interface MatchEvent {
     playerOut?: string; // for substitutions
     playerIn?: string;  // for substitutions
     notes?: string;
+    addedTime?: number; // for injury time events (e.g. 45+2)
 }
 
 // Match Interface

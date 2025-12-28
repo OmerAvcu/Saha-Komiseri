@@ -23,20 +23,22 @@ function generateMatchReport(match: Match): string {
         const teamName = event.team === 'home' ? match.homeTeam : match.awayTeam;
         const icon = getEventIcon(event.type);
 
+        const timeText = event.addedTime ? `${event.minute}+${event.addedTime}` : `${event.minute}`;
+
         switch (event.type) {
             case 'goal':
-                return `• ${event.minute}' ${icon} Gol${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+                return `• ${timeText}' ${icon} Gol${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
             case 'yellowCard':
-                return `• ${event.minute}' ${icon} Sarı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+                return `• ${timeText}' ${icon} Sarı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
             case 'redCard':
-                return `• ${event.minute}' ${icon} Kırmızı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
+                return `• ${timeText}' ${icon} Kırmızı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
             case 'substitution':
                 const subInfo = event.playerIn && event.playerOut
                     ? `(Giren: ${event.playerIn}, Çıkan: ${event.playerOut})`
                     : event.player ? `(${event.player})` : '';
-                return `• ${event.minute}' ${icon} Değişiklik ${subInfo} - ${teamName}`;
+                return `• ${timeText}' ${icon} Değişiklik ${subInfo} - ${teamName}`;
             default:
-                return `• ${event.minute}' ${event.type}`;
+                return `• ${timeText}' ${event.type}`;
         }
     };
 
@@ -234,8 +236,10 @@ export default function MatchDetailScreen() {
 
                                 return (
                                     <View key={event.id || index} style={styles.eventRow}>
-                                        <View style={styles.eventMinute}>
-                                            <Text style={styles.eventMinuteText}>{event.minute}'</Text>
+                                        <View style={[styles.eventMinute, event.addedTime ? { width: 42, left: -21 } : {}]}>
+                                            <Text style={styles.eventMinuteText}>
+                                                {event.addedTime ? `${event.minute}+${event.addedTime}` : event.minute}'
+                                            </Text>
                                         </View>
                                         <View style={[styles.eventIcon, { backgroundColor: color + '20' }]}>
                                             <MaterialCommunityIcons name={icon as any} size={20} color={color} />
