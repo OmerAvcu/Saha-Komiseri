@@ -127,54 +127,59 @@ export default function CanliTakipScreen() {
     const handleSaveEvent = async () => {
         if (!activeMatch || !currentAction) return;
 
-        const minute = parseInt(formData.minute) || getCurrentMinute();
-
-        const newEvent: MatchEvent = {
-            id: uuidv4(),
-            minute,
-            type: currentAction as MatchEventType,
-            team: formData.team,
-            player: formData.player.trim() || undefined,
-            playerOut: formData.playerOut?.trim() || undefined,
-            playerIn: formData.playerIn?.trim() || undefined,
-        };
-
-        // Update scores if goal
-        let homeScore = activeMatch.homeScore;
-        let awayScore = activeMatch.awayScore;
-
-        if (currentAction === 'goal') {
-            if (formData.team === 'home') {
-                homeScore += 1;
-            } else {
-                awayScore += 1;
-            }
-        }
-
-        const updatedMatch: Match = {
-            ...activeMatch,
-            homeScore,
-            awayScore,
-            events: [newEvent, ...activeMatch.events],
-            currentMinute: minute,
-        };
-
-        setActiveMatch(updatedMatch);
-
-        // Persist to context
         try {
-            await updateMatch(activeMatch.id, {
-                status: 'live',
+            const minute = parseInt(formData.minute) || getCurrentMinute();
+
+            const newEvent: MatchEvent = {
+                id: uuidv4(),
+                minute,
+                type: currentAction as MatchEventType,
+                team: formData.team,
+                player: formData.player?.trim() || undefined,
+                playerOut: formData.playerOut?.trim() || undefined,
+                playerIn: formData.playerIn?.trim() || undefined,
+            };
+
+            // Update scores if goal
+            let homeScore = activeMatch.homeScore || 0;
+            let awayScore = activeMatch.awayScore || 0;
+
+            if (currentAction === 'goal') {
+                if (formData.team === 'home') {
+                    homeScore += 1;
+                } else {
+                    awayScore += 1;
+                }
+            }
+
+            const updatedMatch: Match = {
+                ...activeMatch,
                 homeScore,
                 awayScore,
-                events: updatedMatch.events,
+                events: [newEvent, ...(activeMatch.events || [])],
                 currentMinute: minute,
-            });
-        } catch (error) {
-            console.error('Error updating match:', error);
-        }
+            };
 
-        setModalVisible(false);
+            setActiveMatch(updatedMatch);
+
+            // Persist to context
+            try {
+                await updateMatch(activeMatch.id, {
+                    status: 'live',
+                    homeScore,
+                    awayScore,
+                    events: updatedMatch.events,
+                    currentMinute: minute,
+                });
+            } catch (error) {
+                console.error('Error updating match:', error);
+            }
+
+            setModalVisible(false);
+        } catch (error) {
+            console.error('Error saving event:', error);
+            Alert.alert('Hata', 'Olay kaydedilemedi');
+        }
     };
 
     // End match

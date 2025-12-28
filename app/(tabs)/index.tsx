@@ -6,7 +6,7 @@ import React from 'react';
 import { Alert, FlatList, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Card, Chip, FAB, IconButton, Surface, Text } from 'react-native-paper';
 
-function MatchCard({ match, onDelete }: { match: Match; onDelete: (id: string) => void }) {
+function MatchCard({ match, onDelete, onEdit }: { match: Match; onDelete: (id: string) => void; onEdit: (id: string) => void }) {
   return (
     <Card style={styles.card} mode="elevated">
       <Card.Content>
@@ -31,13 +31,22 @@ function MatchCard({ match, onDelete }: { match: Match; onDelete: (id: string) =
               {match.category}
             </Chip>
           </View>
-          <IconButton
-            icon="delete"
-            size={20}
-            iconColor="#ef4444"
-            onPress={() => onDelete(match.id)}
-            style={styles.deleteButton}
-          />
+          <View style={styles.actionButtons}>
+            <IconButton
+              icon="pencil"
+              size={20}
+              iconColor="#1a73e8"
+              onPress={() => onEdit(match.id)}
+              style={styles.actionButton}
+            />
+            <IconButton
+              icon="delete"
+              size={20}
+              iconColor="#ef4444"
+              onPress={() => onDelete(match.id)}
+              style={styles.actionButton}
+            />
+          </View>
         </View>
 
         <View style={styles.teamsContainer}>
@@ -111,6 +120,10 @@ export default function MaclarScreen() {
     );
   };
 
+  const handleEditMatch = (id: string) => {
+    router.push(`/match-form?matchId=${id}`);
+  };
+
   if (isLoading) {
     return (
       <View style={styles.loadingContainer}>
@@ -134,7 +147,7 @@ export default function MaclarScreen() {
       <FlatList
         data={scheduledMatches}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <MatchCard match={item} onDelete={handleDeleteMatch} />}
+        renderItem={({ item }) => <MatchCard match={item} onDelete={handleDeleteMatch} onEdit={handleEditMatch} />}
         contentContainerStyle={[
           styles.listContent,
           scheduledMatches.length === 0 && styles.emptyListContent
@@ -211,6 +224,12 @@ const styles = StyleSheet.create({
   deleteButton: {
     margin: -8,
     marginRight: -4,
+  },
+  actionButtons: {
+    flexDirection: 'row',
+  },
+  actionButton: {
+    margin: -4,
   },
   leagueChip: {
     backgroundColor: '#e8f0fe',

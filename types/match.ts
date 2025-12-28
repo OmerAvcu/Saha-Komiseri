@@ -35,7 +35,12 @@ export interface Match {
     venue: string;
     league: string;
     category: string; // U16, U19, Amatör, etc.
-    referee?: string; // Main referee name
+    // Referee and Officials
+    referee?: string; // Main referee (Orta Hakem)
+    assistantRef1?: string; // 1st Assistant Referee (1. Yardımcı Hakem)
+    assistantRef2?: string; // 2nd Assistant Referee (2. Yardımcı Hakem)
+    fourthOfficial?: string; // 4th Official (4. Hakem)
+    observer?: string; // Match Observer (Gözlemci)
     status: MatchStatus;
     homeScore: number;
     awayScore: number;

@@ -48,6 +48,18 @@ function generateMatchReport(match: Match): string {
         eventsText = '• Olay kaydı girilmedi';
     }
 
+    // Build referee staff section
+    let refereeStaff = '👤 HAKEM KADROSU:\n';
+    refereeStaff += `Orta Hakem: ${match.referee || 'Belirtilmedi'}\n`;
+    refereeStaff += `1. Yrd. Hakem: ${match.assistantRef1 || 'Belirtilmedi'}\n`;
+    refereeStaff += `2. Yrd. Hakem: ${match.assistantRef2 || 'Belirtilmedi'}`;
+    if (match.fourthOfficial) {
+        refereeStaff += `\n4. Hakem: ${match.fourthOfficial}`;
+    }
+    if (match.observer) {
+        refereeStaff += `\n👀 Gözlemci: ${match.observer}`;
+    }
+
     const report = `📋 MÜSABAKA RAPORU
 
 🏆 ${match.category}
@@ -59,7 +71,8 @@ function generateMatchReport(match: Match): string {
 ⏱ DAKİKALAR & OLAYLAR:
 ${eventsText}
 --------------------------------
-👤 Hakem: ${match.referee || 'Belirtilmedi'}
+${refereeStaff}
+--------------------------------
 📱 Saha Komiseri Uygulaması ile oluşturuldu.`;
 
     return report;

@@ -1,8 +1,8 @@
 import { useAppContext } from '@/context/AppContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Picker } from '@react-native-picker/picker';
-import { Stack, useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
@@ -14,7 +14,11 @@ import {
 
 export default function MatchFormScreen() {
     const router = useRouter();
-    const { settings, addMatch, isLoading } = useAppContext();
+    const params = useLocalSearchParams<{ matchId?: string }>();
+    const { settings, addMatch, updateMatch, getMatchById, isLoading } = useAppContext();
+
+    const isEditMode = !!params.matchId;
+    const existingMatch = isEditMode ? getMatchById(params.matchId!) : null;
 
     const [saving, setSaving] = useState(false);
     const [selectedDate, setSelectedDate] = useState(new Date());
@@ -29,9 +33,51 @@ export default function MatchFormScreen() {
         league: '',
         category: settings?.categories?.[0]?.id || '',
         referee: '',
+        assistantRef1: '',
+        assistantRef2: '',
+        fourthOfficial: '',
+        observer: '',
     });
 
     const categories = settings?.categories || [];
+
+    // Load existing match data in edit mode
+    useEffect(() => {
+        if (existingMatch && settings?.categories) {
+            try {
+                setFormData({
+                    homeTeam: existingMatch.homeTeam || '',
+                    awayTeam: existingMatch.awayTeam || '',
+                    venue: existingMatch.venue || '',
+                    league: existingMatch.league || '',
+                    category: settings.categories.find(c => c.name === existingMatch.category)?.id || existingMatch.category || '',
+                    referee: existingMatch.referee || '',
+                    assistantRef1: existingMatch.assistantRef1 || '',
+                    assistantRef2: existingMatch.assistantRef2 || '',
+                    fourthOfficial: existingMatch.fourthOfficial || '',
+                    observer: existingMatch.observer || '',
+                });
+                // Parse date safely
+                if (existingMatch.date && existingMatch.date.includes('-')) {
+                    const parts = existingMatch.date.split('-').map(Number);
+                    if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
+                        setSelectedDate(new Date(parts[0], parts[1] - 1, parts[2]));
+                    }
+                }
+                // Parse time safely
+                if (existingMatch.time && existingMatch.time.includes(':')) {
+                    const timeParts = existingMatch.time.split(':').map(Number);
+                    if (timeParts.length >= 2 && !isNaN(timeParts[0]) && !isNaN(timeParts[1])) {
+                        const timeDate = new Date();
+                        timeDate.setHours(timeParts[0], timeParts[1]);
+                        setSelectedTime(timeDate);
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading match data:', error);
+            }
+        }
+    }, [existingMatch, settings?.categories]);
 
     // Format date as YYYY-MM-DD
     const formatDate = (date: Date): string => {
@@ -91,7 +137,7 @@ export default function MatchFormScreen() {
             // Find category name for display
             const selectedCategory = categories.find(c => c.id === formData.category);
 
-            await addMatch({
+            const matchData = {
                 homeTeam: formData.homeTeam.trim(),
                 awayTeam: formData.awayTeam.trim(),
                 date: formatDate(selectedDate),
@@ -100,12 +146,24 @@ export default function MatchFormScreen() {
                 league: formData.league.trim() || selectedCategory?.name || 'Belirtilmedi',
                 category: selectedCategory?.name || formData.category,
                 referee: formData.referee.trim() || undefined,
-                status: 'scheduled',
-            });
+                assistantRef1: formData.assistantRef1.trim() || undefined,
+                assistantRef2: formData.assistantRef2.trim() || undefined,
+                fourthOfficial: formData.fourthOfficial.trim() || undefined,
+                observer: formData.observer.trim() || undefined,
+                status: 'scheduled' as const,
+            };
 
-            Alert.alert('Başarılı', 'Maç başarıyla eklendi', [
-                { text: 'Tamam', onPress: () => router.back() }
-            ]);
+            if (isEditMode && params.matchId) {
+                await updateMatch(params.matchId, matchData);
+                Alert.alert('Başarılı', 'Maç başarıyla güncellendi', [
+                    { text: 'Tamam', onPress: () => router.back() }
+                ]);
+            } else {
+                await addMatch(matchData);
+                Alert.alert('Başarılı', 'Maç başarıyla eklendi', [
+                    { text: 'Tamam', onPress: () => router.back() }
+                ]);
+            }
         } catch (error: any) {
             console.error('Error saving match:', error);
             Alert.alert('Hata', `Maç kaydedilemedi: ${error?.message || 'Bilinmeyen hata'}`);
@@ -127,7 +185,7 @@ export default function MatchFormScreen() {
         <>
             <Stack.Screen
                 options={{
-                    title: 'Yeni Maç',
+                    title: isEditMode ? 'Maç Düzenle' : 'Yeni Maç',
                     headerStyle: { backgroundColor: '#1a73e8' },
                     headerTintColor: '#ffffff',
                 }}
@@ -183,7 +241,6 @@ export default function MatchFormScreen() {
                             mode="date"
                             display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                             onChange={onDateChange}
-                            minimumDate={new Date()}
                         />
                     )}
 
@@ -253,14 +310,70 @@ export default function MatchFormScreen() {
                             ))}
                         </Picker>
                     </View>
+                </Surface>
+
+                <Surface style={styles.formSection} elevation={1}>
+                    <Text style={styles.sectionTitle}>Hakem Kadrosu</Text>
 
                     <TextInput
-                        label="Hakem"
+                        label="Orta Hakem"
                         value={formData.referee}
                         onChangeText={(text) => setFormData({ ...formData, referee: text })}
                         style={styles.input}
                         mode="outlined"
                         placeholder="Örn: Cüneyt Çakır"
+                        textColor="#000000"
+                        placeholderTextColor="#666666"
+                        outlineColor="#cccccc"
+                        activeOutlineColor="#1a73e8"
+                    />
+
+                    <TextInput
+                        label="1. Yardımcı Hakem"
+                        value={formData.assistantRef1}
+                        onChangeText={(text) => setFormData({ ...formData, assistantRef1: text })}
+                        style={styles.input}
+                        mode="outlined"
+                        placeholder="Örn: Bahattin Duran"
+                        textColor="#000000"
+                        placeholderTextColor="#666666"
+                        outlineColor="#cccccc"
+                        activeOutlineColor="#1a73e8"
+                    />
+
+                    <TextInput
+                        label="2. Yardımcı Hakem"
+                        value={formData.assistantRef2}
+                        onChangeText={(text) => setFormData({ ...formData, assistantRef2: text })}
+                        style={styles.input}
+                        mode="outlined"
+                        placeholder="Örn: Tarik Ongun"
+                        textColor="#000000"
+                        placeholderTextColor="#666666"
+                        outlineColor="#cccccc"
+                        activeOutlineColor="#1a73e8"
+                    />
+
+                    <TextInput
+                        label="4. Hakem"
+                        value={formData.fourthOfficial}
+                        onChangeText={(text) => setFormData({ ...formData, fourthOfficial: text })}
+                        style={styles.input}
+                        mode="outlined"
+                        placeholder="Opsiyonel"
+                        textColor="#000000"
+                        placeholderTextColor="#666666"
+                        outlineColor="#cccccc"
+                        activeOutlineColor="#1a73e8"
+                    />
+
+                    <TextInput
+                        label="Gözlemci"
+                        value={formData.observer}
+                        onChangeText={(text) => setFormData({ ...formData, observer: text })}
+                        style={styles.input}
+                        mode="outlined"
+                        placeholder="Opsiyonel"
                         textColor="#000000"
                         placeholderTextColor="#666666"
                         outlineColor="#cccccc"
@@ -284,7 +397,7 @@ export default function MatchFormScreen() {
                         loading={saving}
                         disabled={saving}
                     >
-                        Kaydet
+                        {isEditMode ? 'Güncelle' : 'Kaydet'}
                     </Button>
                 </View>
             </ScrollView>

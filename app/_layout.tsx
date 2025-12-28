@@ -1,10 +1,12 @@
+// MUST be first import for uuid to work
+import 'react-native-get-random-values';
+
 import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
 import { useFonts } from 'expo-font';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import 'react-native-get-random-values';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
 
