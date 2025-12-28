@@ -1,9 +1,9 @@
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
-import React from 'react';
-import { FlatList, Share, StyleSheet, View } from 'react-native';
-import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
+import React, { useMemo, useState } from 'react';
+import { FlatList, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { ActivityIndicator, Button, Card, Chip, Surface, Text, TextInput } from 'react-native-paper';
 
 // Generate match report text for sharing
 function generateMatchReport(match: Match): string {
@@ -195,8 +195,38 @@ function EmptyState() {
 }
 
 export default function SonuclarScreen() {
-    const { getCompletedMatches, isLoading } = useAppContext();
+    const { getCompletedMatches, settings, isLoading } = useAppContext();
     const completedMatches = getCompletedMatches();
+
+    const [searchQuery, setSearchQuery] = useState('');
+    const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+
+    // Get unique categories from completed matches
+    const categories = useMemo(() => {
+        const cats = new Set<string>();
+        completedMatches.forEach(match => {
+            if (match.category) cats.add(match.category);
+        });
+        return Array.from(cats);
+    }, [completedMatches]);
+
+    // Filter matches based on search and category
+    const filteredMatches = useMemo(() => {
+        return completedMatches.filter(match => {
+            const searchLower = searchQuery.toLowerCase().trim();
+            const matchesSearch = searchLower === '' ||
+                match.homeTeam.toLowerCase().includes(searchLower) ||
+                match.awayTeam.toLowerCase().includes(searchLower) ||
+                match.venue?.toLowerCase().includes(searchLower) ||
+                match.referee?.toLowerCase().includes(searchLower) ||
+                match.date?.includes(searchLower);
+
+            const matchesCategory = selectedCategory === null ||
+                match.category === selectedCategory;
+
+            return matchesSearch && matchesCategory;
+        });
+    }, [completedMatches, searchQuery, selectedCategory]);
 
     if (isLoading) {
         return (
@@ -212,19 +242,63 @@ export default function SonuclarScreen() {
             <Surface style={styles.headerSurface} elevation={1}>
                 <Text style={styles.headerTitle}>Maç Sonuçları</Text>
                 <Text style={styles.headerSubtitle}>
-                    {completedMatches.length > 0
-                        ? `${completedMatches.length} maç tamamlandı`
-                        : 'Henüz tamamlanmış maç yok'}
+                    {filteredMatches.length > 0
+                        ? `${filteredMatches.length} maç gösteriliyor`
+                        : 'Sonuç bulunamadı'}
                 </Text>
+
+                {/* Search Bar */}
+                <TextInput
+                    placeholder="Takım, tarih veya mekan ara..."
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    style={styles.searchInput}
+                    mode="outlined"
+                    left={<TextInput.Icon icon="magnify" />}
+                    right={searchQuery ? <TextInput.Icon icon="close" onPress={() => setSearchQuery('')} /> : null}
+                    dense
+                    outlineColor="#e5e7eb"
+                    activeOutlineColor="#1a73e8"
+                />
+
+                {/* Category Filter */}
+                {categories.length > 0 && (
+                    <ScrollView
+                        horizontal
+                        showsHorizontalScrollIndicator={false}
+                        style={styles.filterScrollView}
+                        contentContainerStyle={styles.filterContainer}
+                    >
+                        <Chip
+                            selected={selectedCategory === null}
+                            onPress={() => setSelectedCategory(null)}
+                            style={styles.filterChip}
+                            textStyle={styles.filterChipText}
+                        >
+                            Tümü
+                        </Chip>
+                        {categories.map(cat => (
+                            <Chip
+                                key={cat}
+                                selected={selectedCategory === cat}
+                                onPress={() => setSelectedCategory(selectedCategory === cat ? null : cat)}
+                                style={styles.filterChip}
+                                textStyle={styles.filterChipText}
+                            >
+                                {cat}
+                            </Chip>
+                        ))}
+                    </ScrollView>
+                )}
             </Surface>
 
             <FlatList
-                data={completedMatches}
+                data={filteredMatches}
                 keyExtractor={(item) => item.id}
                 renderItem={({ item }) => <ResultCard match={item} />}
                 contentContainerStyle={[
                     styles.listContent,
-                    completedMatches.length === 0 && styles.emptyListContent
+                    filteredMatches.length === 0 && styles.emptyListContent
                 ]}
                 showsVerticalScrollIndicator={false}
                 ListEmptyComponent={<EmptyState />}
@@ -263,6 +337,22 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: '#6b7280',
         marginTop: 4,
+    },
+    searchInput: {
+        marginTop: 12,
+        backgroundColor: '#ffffff',
+    },
+    filterScrollView: {
+        marginTop: 12,
+    },
+    filterContainer: {
+        gap: 8,
+    },
+    filterChip: {
+        backgroundColor: '#e8f0fe',
+    },
+    filterChipText: {
+        fontSize: 12,
     },
     listContent: {
         paddingHorizontal: 16,

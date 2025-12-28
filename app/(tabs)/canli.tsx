@@ -1,8 +1,9 @@
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent, MatchEventType } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
-import { Alert, FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, AppState, FlatList, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
     Button,
@@ -16,6 +17,9 @@ import {
 } from 'react-native-paper';
 import { v4 as uuidv4 } from 'uuid';
 
+// Storage keys
+const LIVE_MATCH_STORAGE_KEY = '@SahaKomiseri:liveMatch';
+
 // Types
 type ActionType = 'goal' | 'yellowCard' | 'redCard' | 'substitution';
 type TeamType = 'home' | 'away';
@@ -28,8 +32,16 @@ interface EventFormData {
     playerIn?: string;
 }
 
+interface LiveMatchState {
+    matchId: string;
+    startTime: number; // Unix timestamp when match started
+    pausedAt: number | null; // Elapsed seconds when paused
+    isRunning: boolean;
+    match: Match;
+}
+
 export default function CanliTakipScreen() {
-    const { getScheduledMatches, getLiveMatches, updateMatch, isLoading } = useAppContext();
+    const { getScheduledMatches, getLiveMatches, getMatchById, updateMatch, isLoading } = useAppContext();
 
     // Active match state
     const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -37,7 +49,8 @@ export default function CanliTakipScreen() {
     // Stopwatch state
     const [isRunning, setIsRunning] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
-    const startTimeRef = useRef<number | null>(null);
+    const matchStartTimeRef = useRef<number | null>(null);
+    const pausedSecondsRef = useRef<number>(0);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
     // Modal state
@@ -54,17 +67,96 @@ export default function CanliTakipScreen() {
     const scheduledMatches = getScheduledMatches();
     const liveMatches = getLiveMatches();
 
-    // Stopwatch logic using timestamp for accuracy
+    // Load persisted live match on mount
+    useEffect(() => {
+        loadPersistedMatch();
+    }, []);
+
+    // Handle app state changes (background/foreground)
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', async (nextAppState) => {
+            if (nextAppState === 'active' && activeMatch && isRunning) {
+                // App came to foreground, recalculate elapsed time
+                const stored = await AsyncStorage.getItem(LIVE_MATCH_STORAGE_KEY);
+                if (stored) {
+                    const state: LiveMatchState = JSON.parse(stored);
+                    if (state.isRunning && state.startTime) {
+                        const now = Date.now();
+                        const realElapsed = Math.floor((now - state.startTime) / 1000);
+                        const matchElapsed = realElapsed * TEST_SPEED_MULTIPLIER;
+                        setElapsedSeconds(matchElapsed + (state.pausedAt || 0));
+                    }
+                }
+            }
+        });
+
+        return () => {
+            subscription.remove();
+        };
+    }, [activeMatch, isRunning]);
+
+    const loadPersistedMatch = async () => {
+        try {
+            const stored = await AsyncStorage.getItem(LIVE_MATCH_STORAGE_KEY);
+            if (stored) {
+                const state: LiveMatchState = JSON.parse(stored);
+                const match = getMatchById(state.matchId);
+                if (match && match.status === 'live') {
+                    setActiveMatch(state.match);
+                    matchStartTimeRef.current = state.startTime;
+                    pausedSecondsRef.current = state.pausedAt || 0;
+
+                    if (state.isRunning) {
+                        const now = Date.now();
+                        const realElapsed = Math.floor((now - state.startTime) / 1000);
+                        const matchElapsed = realElapsed * TEST_SPEED_MULTIPLIER;
+                        setElapsedSeconds(matchElapsed + pausedSecondsRef.current);
+                        setIsRunning(true);
+                    } else {
+                        setElapsedSeconds(state.pausedAt || 0);
+                    }
+                } else {
+                    await AsyncStorage.removeItem(LIVE_MATCH_STORAGE_KEY);
+                }
+            }
+        } catch (error) {
+            console.error('Error loading persisted match:', error);
+        }
+    };
+
+    const persistLiveMatch = async (running: boolean, elapsed: number) => {
+        if (!activeMatch) return;
+        try {
+            const state: LiveMatchState = {
+                matchId: activeMatch.id,
+                startTime: running ? Date.now() : (matchStartTimeRef.current || Date.now()),
+                pausedAt: running ? 0 : elapsed,
+                isRunning: running,
+                match: activeMatch,
+            };
+            await AsyncStorage.setItem(LIVE_MATCH_STORAGE_KEY, JSON.stringify(state));
+        } catch (error) {
+            console.error('Error persisting match:', error);
+        }
+    };
+
+    const clearPersistedMatch = async () => {
+        try {
+            await AsyncStorage.removeItem(LIVE_MATCH_STORAGE_KEY);
+        } catch (error) {
+            console.error('Error clearing persisted match:', error);
+        }
+    };
+
+    // TEST MODE: 90x speed (90 match minutes = 1 real minute)
+    // Set to 1 for normal speed in production
+    const TEST_SPEED_MULTIPLIER = 90;
+
+    // Stopwatch logic - simpler approach with speed multiplier
     useEffect(() => {
         if (isRunning) {
-            if (startTimeRef.current === null) {
-                startTimeRef.current = Date.now() - (elapsedSeconds * 1000);
-            }
-
             intervalRef.current = setInterval(() => {
-                const now = Date.now();
-                const newElapsed = Math.floor((now - startTimeRef.current!) / 1000);
-                setElapsedSeconds(newElapsed);
+                setElapsedSeconds(prev => prev + TEST_SPEED_MULTIPLIER);
             }, 1000);
         } else {
             if (intervalRef.current) {
@@ -96,17 +188,23 @@ export default function CanliTakipScreen() {
     const handleStartMatch = (match: Match) => {
         setActiveMatch({ ...match, status: 'live', homeScore: 0, awayScore: 0, events: [] });
         setElapsedSeconds(0);
-        startTimeRef.current = null;
+        matchStartTimeRef.current = null;
+        pausedSecondsRef.current = 0;
         setIsRunning(false);
+        persistLiveMatch(false, 0);
     };
 
     // Toggle stopwatch
     const toggleStopwatch = () => {
-        if (!isRunning) {
-            // Starting
-            startTimeRef.current = Date.now() - (elapsedSeconds * 1000);
+        const newRunning = !isRunning;
+        if (newRunning) {
+            matchStartTimeRef.current = Date.now();
+            persistLiveMatch(true, elapsedSeconds);
+        } else {
+            pausedSecondsRef.current = elapsedSeconds;
+            persistLiveMatch(false, elapsedSeconds);
         }
-        setIsRunning(!isRunning);
+        setIsRunning(newRunning);
     };
 
     // Open action modal with auto-filled minute
@@ -203,9 +301,10 @@ export default function CanliTakipScreen() {
                                 awayScore: activeMatch.awayScore,
                                 events: activeMatch.events,
                             });
+                            await clearPersistedMatch();
                             setActiveMatch(null);
                             setElapsedSeconds(0);
-                            startTimeRef.current = null;
+                            matchStartTimeRef.current = null;
                         } catch (error) {
                             console.error('Error ending match:', error);
                             Alert.alert('Hata', 'Maç bitirilemedi');
@@ -226,11 +325,25 @@ export default function CanliTakipScreen() {
                 {
                     text: 'Evet, Çık',
                     style: 'destructive',
-                    onPress: () => {
+                    onPress: async () => {
+                        // Restore match to scheduled status
+                        if (activeMatch) {
+                            try {
+                                await updateMatch(activeMatch.id, {
+                                    status: 'scheduled',
+                                    homeScore: 0,
+                                    awayScore: 0,
+                                    events: [],
+                                });
+                            } catch (error) {
+                                console.error('Error restoring match:', error);
+                            }
+                        }
+                        await clearPersistedMatch();
                         setIsRunning(false);
                         setActiveMatch(null);
                         setElapsedSeconds(0);
-                        startTimeRef.current = null;
+                        matchStartTimeRef.current = null;
                     },
                 },
             ]
