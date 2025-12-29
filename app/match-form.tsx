@@ -315,8 +315,7 @@ export default function MatchFormScreen() {
                                         mode="outlined"
                                         value={formData.league}
                                         placeholder="Seçiniz..."
-                                        style={styles.input}
-                                        paddingHorizontal={12} // Fix weird touch target
+                                        style={[styles.input, { paddingHorizontal: 12 }]}
                                         right={<TextInput.Icon icon="menu-down" />}
                                         textColor={theme.text}
                                         theme={inputTheme}
@@ -365,11 +364,9 @@ export default function MatchFormScreen() {
                         {categories.map((category) => (
                             <Menu.Item
                                 key={category.id}
-                                title={`${category.name}`}
-                                description={`${category.halfDuration}dk / ${category.substitutionLimit} değiş.`}
+                                title={`${category.name} (${category.halfDuration}dk / ${category.substitutionLimit} değiş.)`}
                                 onPress={() => { setFormData({ ...formData, category: category.id }); setShowCategoryMenu(false); }}
                                 titleStyle={{ color: theme.text }}
-                                descriptionStyle={{ color: theme.textSecondary }}
                             />
                         ))}
                     </Menu>
