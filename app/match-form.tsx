@@ -54,6 +54,7 @@ export default function MatchFormScreen() {
         assistantRef2: '',
         fourthOfficial: '',
         observer: '',
+        representative: '',
     });
 
     const categories = settings?.categories || [];
@@ -74,6 +75,7 @@ export default function MatchFormScreen() {
                     assistantRef2: existingMatch.assistantRef2 || '',
                     fourthOfficial: existingMatch.fourthOfficial || '',
                     observer: existingMatch.observer || '',
+                    representative: existingMatch.representative || '',
                 });
                 if (existingMatch.date && existingMatch.date.includes('-')) {
                     const parts = existingMatch.date.split('-').map(Number);
@@ -160,6 +162,7 @@ export default function MatchFormScreen() {
                 assistantRef2: formData.assistantRef2.trim() || undefined,
                 fourthOfficial: formData.fourthOfficial.trim() || undefined,
                 observer: formData.observer.trim() || undefined,
+                representative: formData.representative.trim() || undefined,
                 status: 'scheduled' as const,
             };
 
@@ -444,6 +447,20 @@ export default function MatchFormScreen() {
                         activeOutlineColor={theme.primary}
                         theme={inputTheme}
                     />
+
+                    <TextInput
+                        label="Temsilci"
+                        value={formData.representative}
+                        onChangeText={(text) => setFormData({ ...formData, representative: text })}
+                        style={styles.input}
+                        mode="outlined"
+                        placeholder="Opsiyonel"
+                        textColor={theme.text}
+                        placeholderTextColor={theme.textSecondary}
+                        outlineColor={theme.border}
+                        activeOutlineColor={theme.primary}
+                        theme={inputTheme}
+                    />
                 </Surface>
 
                 <View style={styles.buttonContainer}>
@@ -504,9 +521,11 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     input: {
         marginBottom: 12,
         backgroundColor: theme.inputBackground,
+        fontSize: 18,
+        minHeight: 60,
     },
     pickerLabel: {
-        fontSize: 12,
+        fontSize: 16,
         color: theme.textSecondary,
         marginBottom: 4,
         marginLeft: 4,

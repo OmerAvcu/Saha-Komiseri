@@ -8,7 +8,14 @@ import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
 
 // Generate match report text for sharing
+// Generate match report text for sharing
 function generateMatchReport(match: Match): string {
+    const formatDate = (dateStr: string): string => {
+        if (!dateStr || !dateStr.includes('-')) return dateStr;
+        const [year, month, day] = dateStr.split('-');
+        return `${day}.${month}.${year}`;
+    };
+
     const getEventIcon = (type: string): string => {
         switch (type) {
             case 'goal': return '⚽';
@@ -22,60 +29,67 @@ function generateMatchReport(match: Match): string {
     const getEventText = (event: MatchEvent, match: Match): string => {
         const teamName = event.team === 'home' ? match.homeTeam : match.awayTeam;
         const icon = getEventIcon(event.type);
-
         const timeText = event.addedTime ? `${event.minute}+${event.addedTime}` : `${event.minute}`;
 
-        switch (event.type) {
-            case 'goal':
-                return `• ${timeText}' ${icon} Gol${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
-            case 'yellowCard':
-                return `• ${timeText}' ${icon} Sarı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
-            case 'redCard':
-                return `• ${timeText}' ${icon} Kırmızı Kart${event.player ? ` (${event.player} - ${teamName})` : ` (${teamName})`}`;
-            case 'substitution':
-                const subInfo = event.playerIn && event.playerOut
-                    ? `(Giren: ${event.playerIn}, Çıkan: ${event.playerOut})`
-                    : event.player ? `(${event.player})` : '';
-                return `• ${timeText}' ${icon} Değişiklik ${subInfo} - ${teamName}`;
-            default:
-                return `• ${timeText}' ${event.type}`;
+        let eventDesc = '';
+        if (event.type === 'goal') eventDesc = 'Gol';
+        else if (event.type === 'yellowCard') eventDesc = 'Sarı Kart';
+        else if (event.type === 'redCard') eventDesc = 'Kırmızı Kart';
+        else if (event.type === 'substitution') eventDesc = 'Oyuncu Değişikliği';
+        else eventDesc = event.type;
+
+        if (event.type === 'substitution') {
+            const subInfo = event.playerIn && event.playerOut
+                ? `(Çıkan: ${event.playerOut} ➡️ Giren: ${event.playerIn})`
+                : event.player ? `(${event.player})` : '';
+            return `${timeText}' ${icon} ${teamName} - ${subInfo}`;
         }
+
+        const playerInfo = event.player ? ` - ${event.player}` : '';
+        return `${timeText}' ${icon} ${teamName}${playerInfo} (${eventDesc})`;
     };
 
     const sortedEvents = [...(match.events || [])].sort((a, b) => a.minute - b.minute);
 
-    let eventsText = '';
+    // Sort events: Goals first, then others
+    const goals = sortedEvents.filter(e => e.type === 'goal');
+
+    // MÜSABAKA RAPORU HEADER
+    let report = `-MÜSABAKA RAPORU- 📋\n\n`;
+    report += `💥 *${match.homeTeam} ${match.homeScore} - ${match.awayScore} ${match.awayTeam}* ⚽\n\n`;
+    report += `🗓️ *TARİH*: ${formatDate(match.date)}\n`;
+    report += `⏱️ *SAAT*: ${match.time}\n`;
+    report += `🏟️ *STADYUM*: ${match.venue || 'Belirtilmedi'}\n`;
+    report += `🏆 *KLASMAN*: ${match.league || 'Belirtilmedi'}\n`;
+    report += `🏷️ *KATEGORİ*: ${match.category || 'Belirtilmedi'}\n\n`;
+
+    // REFEREES & OFFICIALS
+    report += `👱 *HAKEMLER*:\n`;
+    report += ` * *1. Hakem (Orta)*: ${match.referee || '---'}\n`;
+    report += ` * *2. Hakem (Yardımcı)*: ${match.assistantRef1 || '---'}\n`;
+    report += ` * *3. Hakem (Yardımcı)*: ${match.assistantRef2 || '---'}\n`;
+    report += ` * *4. Hakem*: ${match.fourthOfficial || '---'}\n\n`;
+
+    report += `👀 *GÖZLEMCİ*: ${match.observer || '---'}\n\n`;
+    report += `👀 *TEMSİLCİ*: ${match.representative || '---'}\n\n`;
+
+    // GOAL DETAILS (Optional addition to match the spirit of "Score - Score")
+    if (goals.length > 0) {
+        report += `⚽ *GOL DAKİKALARI*:\n`;
+        goals.forEach(g => {
+            const time = g.addedTime ? `${g.minute}+${g.addedTime}` : `${g.minute}`;
+            const player = g.player || 'Belirsiz';
+            const team = g.team === 'home' ? match.homeTeam : match.awayTeam;
+            report += ` * ${time}' ${player} (${team})\n`;
+        });
+        report += `\n`;
+    }
+
+    // ALL EVENTS
     if (sortedEvents.length > 0) {
-        eventsText = sortedEvents.map(event => getEventText(event, match)).join('\n');
-    } else {
-        eventsText = '• Olay kaydı girilmedi';
+        report += `📝 *TÜM OYUN HAREKETLERİ*:\n`;
+        report += sortedEvents.map(e => getEventText(e, match)).join('\n');
     }
-
-    let refereeStaff = '👤 HAKEM KADROSU:\n';
-    refereeStaff += `Orta Hakem: ${match.referee || 'Belirtilmedi'}\n`;
-    refereeStaff += `1. Yrd. Hakem: ${match.assistantRef1 || 'Belirtilmedi'}\n`;
-    refereeStaff += `2. Yrd. Hakem: ${match.assistantRef2 || 'Belirtilmedi'}`;
-    if (match.fourthOfficial) {
-        refereeStaff += `\n4. Hakem: ${match.fourthOfficial}`;
-    }
-    if (match.observer) {
-        refereeStaff += `\n👀 Gözlemci: ${match.observer}`;
-    }
-
-    const report = `📋 MÜSABAKA RAPORU
-
-🏆 ${match.category}
-🏟 ${match.venue}
-🗓 ${match.date} - ${match.time}
-
-⚔️ ${match.homeTeam}  ${match.homeScore} - ${match.awayScore}  ${match.awayTeam}
---------------------------------
-⏱ DAKİKALAR & OLAYLAR:
-${eventsText}
---------------------------------
-${refereeStaff}
---------------------------------
-📱 Saha Komiseri Uygulaması ile oluşturuldu.`;
 
     return report;
 }
@@ -209,19 +223,20 @@ export default function MatchDetailScreen() {
                             <Text style={styles.refLabel}>2. Yardımcı:</Text>
                             <Text style={styles.refValue}>{match.assistantRef2 || 'Belirtilmedi'}</Text>
                         </View>
-                        {match.fourthOfficial && (
-                            <View style={styles.infoRow}>
-                                <Text style={styles.refLabel}>4. Hakem:</Text>
-                                <Text style={styles.refValue}>{match.fourthOfficial}</Text>
-                            </View>
-                        )}
-                        {match.observer && (
-                            <View style={styles.infoRow}>
-                                <MaterialCommunityIcons name="eye" size={16} color={theme.textSecondary} />
-                                <Text style={styles.refLabel}>Gözlemci:</Text>
-                                <Text style={styles.refValue}>{match.observer}</Text>
-                            </View>
-                        )}
+                        <View style={styles.infoRow}>
+                            <Text style={styles.refLabel}>4. Hakem:</Text>
+                            <Text style={styles.refValue}>{match.fourthOfficial || '---'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <MaterialCommunityIcons name="eye" size={16} color={theme.textSecondary} />
+                            <Text style={styles.refLabel}>Gözlemci:</Text>
+                            <Text style={styles.refValue}>{match.observer || '---'}</Text>
+                        </View>
+                        <View style={styles.infoRow}>
+                            <MaterialCommunityIcons name="account-tie" size={16} color={theme.textSecondary} />
+                            <Text style={styles.refLabel}>Temsilci:</Text>
+                            <Text style={styles.refValue}>{match.representative || '---'}</Text>
+                        </View>
                     </Card.Content>
                 </Card>
 

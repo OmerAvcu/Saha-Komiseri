@@ -42,6 +42,7 @@ export interface Match {
     assistantRef2?: string; // 2nd Assistant Referee (2. Yardımcı Hakem)
     fourthOfficial?: string; // 4th Official (4. Hakem)
     observer?: string; // Match Observer (Gözlemci)
+    representative?: string; // Match Representative (Temsilci)
     status: MatchStatus;
     homeScore: number;
     awayScore: number;

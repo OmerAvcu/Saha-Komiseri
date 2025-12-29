@@ -1162,7 +1162,7 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     },
     actionButton: {
         width: '48%',
-        height: 80,
+        height: 100,
         marginBottom: 12,
         borderRadius: 16,
         alignItems: 'center',
@@ -1198,13 +1198,13 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
         backgroundColor: '#DBEAFE',
     },
     actionIcon: {
-        fontSize: 32,
-        marginBottom: 6,
+        fontSize: 48,
+        marginBottom: 8,
         color: '#000000', // Icons on pastel buttons usually black
     },
     actionLabel: {
-        fontSize: 12,
-        fontWeight: '700',
+        fontSize: 14,
+        fontWeight: '800',
         color: '#121212',
     },
     // Event log
@@ -1294,6 +1294,8 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
         marginBottom: 14,
         backgroundColor: theme.inputBackground,
         borderRadius: 12,
+        fontSize: 18,
+        height: 60,
     },
     teamSelectLabel: {
         fontSize: 12,
