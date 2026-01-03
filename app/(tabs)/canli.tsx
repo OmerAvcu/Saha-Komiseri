@@ -189,9 +189,8 @@ export default function CanliTakipScreen() {
         }
     };
 
-    // TEST MODE: 90x speed (90 match minutes = 1 real minute)
-    // Set to 1 for normal speed in production
-    const TEST_SPEED_MULTIPLIER = 90;
+    // Normal speed: 1 real second = 1 match second
+    const TEST_SPEED_MULTIPLIER = 1;
 
     // Stopwatch logic - TIMESTAMP BASED: recalculate from periodStartTime on each tick
     useEffect(() => {
