@@ -311,10 +311,37 @@ export function AppProvider({ children }: AppProviderProps) {
     // Export all data as JSON and share
     const exportData = useCallback(async (): Promise<void> => {
         try {
+            // Process matches to encode esamePhotos as Base64
+            const matchesWithBase64Photos = await Promise.all(
+                matches.map(async (match) => {
+                    if (match.esamePhotos && match.esamePhotos.length > 0) {
+                        const photosBase64 = await Promise.all(
+                            match.esamePhotos.map(async (uri) => {
+                                try {
+                                    const base64 = await FileSystem.readAsStringAsync(uri, {
+                                        encoding: FileSystem.EncodingType.Base64,
+                                    });
+                                    return base64;
+                                } catch (e) {
+                                    console.warn('Could not read photo:', uri, e);
+                                    return null;
+                                }
+                            })
+                        );
+                        return {
+                            ...match,
+                            esamePhotosBase64: photosBase64.filter(p => p !== null),
+                            esamePhotos: undefined, // Don't include file paths in backup
+                        };
+                    }
+                    return match;
+                })
+            );
+
             const backupData = {
-                version: '1.0',
+                version: '1.1', // Updated version for photo support
                 exportDate: new Date().toISOString(),
-                matches,
+                matches: matchesWithBase64Photos,
                 settings,
             };
 
@@ -432,12 +459,40 @@ export function AppProvider({ children }: AppProviderProps) {
                 return false;
             }
 
+            // Process matches to decode Base64 esamePhotos
+            const matchesWithRestoredPhotos = await Promise.all(
+                backupData.matches.map(async (match: any) => {
+                    if (match.esamePhotosBase64 && match.esamePhotosBase64.length > 0) {
+                        const restoredUris = await Promise.all(
+                            match.esamePhotosBase64.map(async (b64: string, i: number) => {
+                                try {
+                                    const path = `${FileSystem.documentDirectory}esame_${match.id}_${i}_${Date.now()}.jpg`;
+                                    await FileSystem.writeAsStringAsync(path, b64, {
+                                        encoding: FileSystem.EncodingType.Base64,
+                                    });
+                                    return path;
+                                } catch (e) {
+                                    console.warn('Could not restore photo:', e);
+                                    return null;
+                                }
+                            })
+                        );
+                        return {
+                            ...match,
+                            esamePhotos: restoredUris.filter((p: string | null) => p !== null),
+                            esamePhotosBase64: undefined, // Remove Base64 from stored data
+                        };
+                    }
+                    return match;
+                })
+            );
+
             // Save to storage
-            await saveMatches(backupData.matches);
+            await saveMatches(matchesWithRestoredPhotos);
             await saveSettings(backupData.settings);
 
             // Update state
-            setMatches(backupData.matches);
+            setMatches(matchesWithRestoredPhotos);
             setSettings(backupData.settings);
 
             Alert.alert('Başarılı', 'Veriler başarıyla geri yüklendi!', [

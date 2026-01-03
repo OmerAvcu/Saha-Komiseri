@@ -4,7 +4,7 @@ import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo } from 'react';
-import { Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import { Image, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
 
 // Generate match report text for sharing
@@ -281,6 +281,20 @@ export default function MatchDetailScreen() {
                     </Card.Content>
                 </Card>
 
+                {/* Esame Photos Card */}
+                {match.esamePhotos && match.esamePhotos.length > 0 && (
+                    <Card style={styles.card}>
+                        <Card.Title title="Esame Listeleri" titleStyle={styles.cardTitle} left={(props) => <MaterialCommunityIcons name="image-multiple" size={24} color={theme.primary} />} />
+                        <Card.Content>
+                            <View style={styles.esamePhotoGrid}>
+                                {match.esamePhotos.map((uri, index) => (
+                                    <Image key={index} source={{ uri }} style={styles.esamePhoto} resizeMode="cover" />
+                                ))}
+                            </View>
+                        </Card.Content>
+                    </Card>
+                )}
+
                 {/* Share Button */}
                 <Button
                     mode="contained"
@@ -540,5 +554,16 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     dateDisplay: {
         color: theme.text,
         fontSize: 16
-    }
+    },
+    esamePhotoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+    },
+    esamePhoto: {
+        width: 150,
+        height: 200,
+        borderRadius: 8,
+        backgroundColor: theme.inputBackground,
+    },
 });

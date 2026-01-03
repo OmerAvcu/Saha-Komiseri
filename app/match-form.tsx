@@ -1,9 +1,10 @@
 import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import * as ImagePicker from 'expo-image-picker';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
     Button,
@@ -31,6 +32,7 @@ export default function MatchFormScreen() {
     // Menu visibility states
     const [showLeagueMenu, setShowLeagueMenu] = useState(false);
     const [showCategoryMenu, setShowCategoryMenu] = useState(false);
+    const [esamePhotos, setEsamePhotos] = useState<string[]>([]);
 
     const styles = useMemo(() => createStyles(theme), [theme]);
     // Stabilization: Memoize the input theme to prevent constant re-creation/animation node issues
@@ -77,6 +79,9 @@ export default function MatchFormScreen() {
                     observer: existingMatch.observer || '',
                     representative: existingMatch.representative || '',
                 });
+                if (existingMatch.esamePhotos) {
+                    setEsamePhotos(existingMatch.esamePhotos);
+                }
                 if (existingMatch.date && existingMatch.date.includes('-')) {
                     const parts = existingMatch.date.split('-').map(Number);
                     if (parts.length === 3 && !isNaN(parts[0]) && !isNaN(parts[1]) && !isNaN(parts[2])) {
@@ -163,6 +168,7 @@ export default function MatchFormScreen() {
                 fourthOfficial: formData.fourthOfficial.trim() || undefined,
                 observer: formData.observer.trim() || undefined,
                 representative: formData.representative.trim() || undefined,
+                esamePhotos: esamePhotos.length > 0 ? esamePhotos : undefined,
                 status: 'scheduled' as const,
             };
 
@@ -191,6 +197,39 @@ export default function MatchFormScreen() {
         const cat = categories.find(c => c.id === formData.category);
         if (!cat) return '';
         return `${cat.name} (${cat.halfDuration}dk / ${cat.substitutionLimit} değişiklik)`;
+    };
+
+    const handleTakePhoto = async () => {
+        try {
+            const { status } = await ImagePicker.requestCameraPermissionsAsync();
+            if (status !== 'granted') {
+                Alert.alert('İzin Gerekli', 'Kamera kullanımı için izin vermeniz gerekiyor.');
+                return;
+            }
+
+            const result = await ImagePicker.launchCameraAsync({
+                mediaTypes: ImagePicker.MediaTypeOptions.Images,
+                quality: 0.4,
+                allowsEditing: false,
+                base64: false,
+            });
+
+            console.log('Camera result:', result);
+
+            if (!result.canceled && result.assets && result.assets.length > 0) {
+                const uri = result.assets[0].uri;
+                console.log('Photo URI:', uri);
+                setEsamePhotos(prev => [...prev, uri]);
+                Alert.alert('Başarılı', 'Fotoğraf eklendi!');
+            }
+        } catch (error) {
+            console.error('Error taking photo:', error);
+            Alert.alert('Hata', 'Fotoğraf çekilemedi: ' + (error as Error).message);
+        }
+    };
+
+    const handleRemovePhoto = (index: number) => {
+        setEsamePhotos(prev => prev.filter((_, i) => i !== index));
     };
 
     if (isLoading) {
@@ -463,6 +502,37 @@ export default function MatchFormScreen() {
                     />
                 </Surface>
 
+                {/* Esame Photos Section */}
+                <Surface style={styles.formSection} elevation={1}>
+                    <Text style={styles.sectionTitle}>Esame Listeleri</Text>
+
+                    <Button
+                        mode="outlined"
+                        icon="camera"
+                        onPress={handleTakePhoto}
+                        style={styles.photoButton}
+                        textColor={theme.primary}
+                    >
+                        📷 Esame Listesi Ekle
+                    </Button>
+
+                    {esamePhotos.length > 0 && (
+                        <View style={styles.photoGrid}>
+                            {esamePhotos.map((uri, index) => (
+                                <View key={index} style={styles.photoThumbnailContainer}>
+                                    <Image source={{ uri }} style={styles.photoThumbnail} />
+                                    <TouchableOpacity
+                                        style={styles.photoDeleteButton}
+                                        onPress={() => handleRemovePhoto(index)}
+                                    >
+                                        <Text style={styles.photoDeleteText}>✕</Text>
+                                    </TouchableOpacity>
+                                </View>
+                            ))}
+                        </View>
+                    )}
+                </Surface>
+
                 <View style={styles.buttonContainer}>
                     <Button
                         mode="outlined"
@@ -559,5 +629,42 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     saveButton: {
         flex: 1,
         backgroundColor: theme.primary,
+    },
+    photoButton: {
+        borderColor: theme.primary,
+        marginBottom: 12,
+    },
+    photoGrid: {
+        flexDirection: 'row',
+        flexWrap: 'wrap',
+        gap: 12,
+        marginTop: 8,
+    },
+    photoThumbnailContainer: {
+        position: 'relative',
+        width: 80,
+        height: 80,
+    },
+    photoThumbnail: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        backgroundColor: theme.inputBackground,
+    },
+    photoDeleteButton: {
+        position: 'absolute',
+        top: -8,
+        right: -8,
+        width: 24,
+        height: 24,
+        borderRadius: 12,
+        backgroundColor: '#ef4444',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    photoDeleteText: {
+        color: '#ffffff',
+        fontSize: 14,
+        fontWeight: 'bold',
     },
 });

@@ -48,6 +48,7 @@ export interface Match {
     awayScore: number;
     events: MatchEvent[];
     currentMinute?: number; // for live matches
+    esamePhotos?: string[]; // Team roster photo URIs
     createdAt: string;
     updatedAt: string;
 }
