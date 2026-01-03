@@ -2,9 +2,10 @@ import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
+import * as MediaLibrary from 'expo-media-library';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useEffect, useMemo, useState } from 'react';
-import { Alert, Image, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
+import { Alert, Image, Modal, Platform, ScrollView, StyleSheet, TouchableOpacity, View } from 'react-native';
 import {
     ActivityIndicator,
     Button,
@@ -33,6 +34,8 @@ export default function MatchFormScreen() {
     const [showLeagueMenu, setShowLeagueMenu] = useState(false);
     const [showCategoryMenu, setShowCategoryMenu] = useState(false);
     const [esamePhotos, setEsamePhotos] = useState<string[]>([]);
+    const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+    const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
     const styles = useMemo(() => createStyles(theme), [theme]);
     // Stabilization: Memoize the input theme to prevent constant re-creation/animation node issues
@@ -520,7 +523,9 @@ export default function MatchFormScreen() {
                         <View style={styles.photoGrid}>
                             {esamePhotos.map((uri, index) => (
                                 <View key={index} style={styles.photoThumbnailContainer}>
-                                    <Image source={{ uri }} style={styles.photoThumbnail} />
+                                    <TouchableOpacity onPress={() => { setSelectedImageUri(uri); setImageViewerVisible(true); }}>
+                                        <Image source={{ uri }} style={styles.photoThumbnail} />
+                                    </TouchableOpacity>
                                     <TouchableOpacity
                                         style={styles.photoDeleteButton}
                                         onPress={() => handleRemovePhoto(index)}
@@ -553,6 +558,34 @@ export default function MatchFormScreen() {
                     </Button>
                 </View>
             </ScrollView>
+
+            {/* Image Viewer Modal */}
+            <Modal visible={imageViewerVisible} transparent animationType="fade" onRequestClose={() => setImageViewerVisible(false)}>
+                <View style={styles.imageViewerOverlay}>
+                    <TouchableOpacity style={styles.imageViewerCloseButton} onPress={() => setImageViewerVisible(false)}>
+                        <Text style={styles.imageViewerCloseText}>✕</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.imageViewerSaveButton} onPress={async () => {
+                        if (!selectedImageUri) return;
+                        try {
+                            const { status } = await MediaLibrary.requestPermissionsAsync();
+                            if (status !== 'granted') {
+                                Alert.alert('İzin Gerekli', 'Galeriye erişim izni gerekiyor.');
+                                return;
+                            }
+                            await MediaLibrary.saveToLibraryAsync(selectedImageUri);
+                            Alert.alert('Başarılı', 'Fotoğraf galeriye kaydedildi.');
+                        } catch (error) {
+                            Alert.alert('Hata', 'Fotoğraf kaydedilemedi.');
+                        }
+                    }}>
+                        <Text style={styles.imageViewerSaveText}>📥</Text>
+                    </TouchableOpacity>
+                    {selectedImageUri && (
+                        <Image source={{ uri: selectedImageUri }} style={styles.imageViewerImage} resizeMode="contain" />
+                    )}
+                </View>
+            </Modal>
         </>
     );
 }
@@ -666,5 +699,47 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
         color: '#ffffff',
         fontSize: 14,
         fontWeight: 'bold',
+    },
+    imageViewerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageViewerCloseButton: {
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    imageViewerCloseText: {
+        color: '#ffffff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    imageViewerSaveButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    imageViewerSaveText: {
+        fontSize: 24,
+    },
+    imageViewerImage: {
+        width: '100%',
+        height: '80%',
     },
 });

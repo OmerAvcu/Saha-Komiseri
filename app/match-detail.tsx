@@ -2,9 +2,10 @@ import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
 import { Match, MatchEvent } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
+import * as MediaLibrary from 'expo-media-library';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
-import React, { useMemo } from 'react';
-import { Image, Platform, ScrollView, Share, StyleSheet, View } from 'react-native';
+import React, { useMemo, useState } from 'react';
+import { Alert, Image, Modal, Platform, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
 
 // Generate match report text for sharing
@@ -101,6 +102,8 @@ export default function MatchDetailScreen() {
 
     const match = params.matchId ? getMatchById(params.matchId) : null;
     const styles = useMemo(() => createStyles(theme), [theme]);
+    const [selectedImageUri, setSelectedImageUri] = useState<string | null>(null);
+    const [imageViewerVisible, setImageViewerVisible] = useState(false);
 
     const handleShareMatch = async () => {
         if (!match) return;
@@ -288,7 +291,9 @@ export default function MatchDetailScreen() {
                         <Card.Content>
                             <View style={styles.esamePhotoGrid}>
                                 {match.esamePhotos.map((uri, index) => (
-                                    <Image key={index} source={{ uri }} style={styles.esamePhoto} resizeMode="cover" />
+                                    <TouchableOpacity key={index} onPress={() => { setSelectedImageUri(uri); setImageViewerVisible(true); }}>
+                                        <Image source={{ uri }} style={styles.esamePhoto} resizeMode="cover" />
+                                    </TouchableOpacity>
                                 ))}
                             </View>
                         </Card.Content>
@@ -309,6 +314,34 @@ export default function MatchDetailScreen() {
 
                 <View style={styles.bottomSpacer} />
             </ScrollView>
+
+            {/* Image Viewer Modal */}
+            <Modal visible={imageViewerVisible} transparent animationType="fade" onRequestClose={() => setImageViewerVisible(false)}>
+                <View style={styles.imageViewerOverlay}>
+                    <TouchableOpacity style={styles.imageViewerCloseButton} onPress={() => setImageViewerVisible(false)}>
+                        <Text style={styles.imageViewerCloseText}>✕</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.imageViewerSaveButton} onPress={async () => {
+                        if (!selectedImageUri) return;
+                        try {
+                            const { status } = await MediaLibrary.requestPermissionsAsync();
+                            if (status !== 'granted') {
+                                Alert.alert('İzin Gerekli', 'Galeriye erişim izni gerekiyor.');
+                                return;
+                            }
+                            await MediaLibrary.saveToLibraryAsync(selectedImageUri);
+                            Alert.alert('Başarılı', 'Fotoğraf galeriye kaydedildi.');
+                        } catch (error) {
+                            Alert.alert('Hata', 'Fotoğraf kaydedilemedi.');
+                        }
+                    }}>
+                        <Text style={styles.imageViewerSaveText}>📥</Text>
+                    </TouchableOpacity>
+                    {selectedImageUri && (
+                        <Image source={{ uri: selectedImageUri }} style={styles.imageViewerImage} resizeMode="contain" />
+                    )}
+                </View>
+            </Modal>
         </>
     );
 }
@@ -565,5 +598,47 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
         height: 200,
         borderRadius: 8,
         backgroundColor: theme.inputBackground,
+    },
+    imageViewerOverlay: {
+        flex: 1,
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageViewerCloseButton: {
+        position: 'absolute',
+        top: 50,
+        left: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    imageViewerCloseText: {
+        color: '#ffffff',
+        fontSize: 24,
+        fontWeight: 'bold',
+    },
+    imageViewerSaveButton: {
+        position: 'absolute',
+        top: 50,
+        right: 20,
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+        justifyContent: 'center',
+        alignItems: 'center',
+        zIndex: 10,
+    },
+    imageViewerSaveText: {
+        fontSize: 24,
+    },
+    imageViewerImage: {
+        width: '100%',
+        height: '80%',
     },
 });
