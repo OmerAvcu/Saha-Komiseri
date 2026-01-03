@@ -10,6 +10,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { PaperProvider } from 'react-native-paper';
 import 'react-native-reanimated';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { darkTheme, lightTheme } from '@/constants/theme';
 import { AppProvider, useAppContext } from '@/context/AppContext';
@@ -49,9 +50,11 @@ export default function RootLayout() {
   }
 
   return (
-    <AppProvider>
-      <AppNavigator />
-    </AppProvider>
+    <SafeAreaProvider>
+      <AppProvider>
+        <AppNavigator />
+      </AppProvider>
+    </SafeAreaProvider>
   );
 }
 

@@ -15,6 +15,7 @@ import {
     TextInput,
     TouchableRipple,
 } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 export default function MatchFormScreen() {
     const router = useRouter();
@@ -561,7 +562,7 @@ export default function MatchFormScreen() {
 
             {/* Image Viewer Modal */}
             <Modal visible={imageViewerVisible} transparent animationType="fade" onRequestClose={() => setImageViewerVisible(false)}>
-                <View style={styles.imageViewerOverlay}>
+                <SafeAreaView style={styles.imageViewerOverlay} edges={['top', 'bottom']}>
                     <TouchableOpacity style={styles.imageViewerCloseButton} onPress={() => setImageViewerVisible(false)}>
                         <Text style={styles.imageViewerCloseText}>✕</Text>
                     </TouchableOpacity>
@@ -584,7 +585,7 @@ export default function MatchFormScreen() {
                     {selectedImageUri && (
                         <Image source={{ uri: selectedImageUri }} style={styles.imageViewerImage} resizeMode="contain" />
                     )}
-                </View>
+                </SafeAreaView>
             </Modal>
         </>
     );
@@ -708,7 +709,7 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     },
     imageViewerCloseButton: {
         position: 'absolute',
-        top: 50,
+        top: 10,
         left: 20,
         width: 44,
         height: 44,
@@ -725,7 +726,7 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     },
     imageViewerSaveButton: {
         position: 'absolute',
-        top: 50,
+        top: 10,
         right: 20,
         width: 44,
         height: 44,

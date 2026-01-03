@@ -7,6 +7,7 @@ import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
 import React, { useMemo, useState } from 'react';
 import { Alert, Image, Modal, Platform, ScrollView, Share, StyleSheet, TouchableOpacity, View } from 'react-native';
 import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-native-paper';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Generate match report text for sharing
 // Generate match report text for sharing
@@ -317,7 +318,7 @@ export default function MatchDetailScreen() {
 
             {/* Image Viewer Modal */}
             <Modal visible={imageViewerVisible} transparent animationType="fade" onRequestClose={() => setImageViewerVisible(false)}>
-                <View style={styles.imageViewerOverlay}>
+                <SafeAreaView style={styles.imageViewerOverlay} edges={['top', 'bottom']}>
                     <TouchableOpacity style={styles.imageViewerCloseButton} onPress={() => setImageViewerVisible(false)}>
                         <Text style={styles.imageViewerCloseText}>✕</Text>
                     </TouchableOpacity>
@@ -340,7 +341,7 @@ export default function MatchDetailScreen() {
                     {selectedImageUri && (
                         <Image source={{ uri: selectedImageUri }} style={styles.imageViewerImage} resizeMode="contain" />
                     )}
-                </View>
+                </SafeAreaView>
             </Modal>
         </>
     );
@@ -607,7 +608,7 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     },
     imageViewerCloseButton: {
         position: 'absolute',
-        top: 50,
+        top: 10,
         left: 20,
         width: 44,
         height: 44,
@@ -624,7 +625,7 @@ const createStyles = (theme: typeof Colors.light) => StyleSheet.create({
     },
     imageViewerSaveButton: {
         position: 'absolute',
-        top: 50,
+        top: 10,
         right: 20,
         width: 44,
         height: 44,
