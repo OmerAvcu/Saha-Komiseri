@@ -1,6 +1,6 @@
 import { Colors } from '@/constants/Colors';
 import { useAppContext } from '@/context/AppContext';
-import { Match, MatchEvent } from '@/types/match';
+import { Match } from '@/types/match';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
 import * as MediaLibrary from 'expo-media-library';
 import { Stack, useLocalSearchParams, useRouter } from 'expo-router';
@@ -10,7 +10,6 @@ import { ActivityIndicator, Button, Card, Chip, Surface, Text } from 'react-nati
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 // Generate match report text for sharing
-// Generate match report text for sharing
 function generateMatchReport(match: Match): string {
     const formatDate = (dateStr: string): string => {
         if (!dateStr || !dateStr.includes('-')) return dateStr;
@@ -18,43 +17,7 @@ function generateMatchReport(match: Match): string {
         return `${day}.${month}.${year}`;
     };
 
-    const getEventIcon = (type: string): string => {
-        switch (type) {
-            case 'goal': return '⚽';
-            case 'yellowCard': return '🟨';
-            case 'redCard': return '🟥';
-            case 'substitution': return '🔄';
-            default: return '•';
-        }
-    };
-
-    const getEventText = (event: MatchEvent, match: Match): string => {
-        const teamName = event.team === 'home' ? match.homeTeam : match.awayTeam;
-        const icon = getEventIcon(event.type);
-        const timeText = event.addedTime ? `${event.minute}+${event.addedTime}` : `${event.minute}`;
-
-        let eventDesc = '';
-        if (event.type === 'goal') eventDesc = 'Gol';
-        else if (event.type === 'yellowCard') eventDesc = 'Sarı Kart';
-        else if (event.type === 'redCard') eventDesc = 'Kırmızı Kart';
-        else if (event.type === 'substitution') eventDesc = 'Oyuncu Değişikliği';
-        else eventDesc = event.type;
-
-        if (event.type === 'substitution') {
-            const subInfo = event.playerIn && event.playerOut
-                ? `(Çıkan: ${event.playerOut} ➡️ Giren: ${event.playerIn})`
-                : event.player ? `(${event.player})` : '';
-            return `${timeText}' ${icon} ${teamName} - ${subInfo}`;
-        }
-
-        const playerInfo = event.player ? ` - ${event.player}` : '';
-        return `${timeText}' ${icon} ${teamName}${playerInfo} (${eventDesc})`;
-    };
-
     const sortedEvents = [...(match.events || [])].sort((a, b) => a.minute - b.minute);
-
-    // Sort events: Goals first, then others
-    const goals = sortedEvents.filter(e => e.type === 'goal');
 
     // MÜSABAKA RAPORU HEADER
     let report = `-MÜSABAKA RAPORU- 📋\n\n`;
@@ -75,22 +38,16 @@ function generateMatchReport(match: Match): string {
     report += `👀 *GÖZLEMCİ*: ${match.observer || '---'}\n\n`;
     report += `👀 *TEMSİLCİ*: ${match.representative || '---'}\n\n`;
 
-    // GOAL DETAILS (Optional addition to match the spirit of "Score - Score")
-    if (goals.length > 0) {
-        report += `⚽ *GOL DAKİKALARI*:\n`;
-        goals.forEach(g => {
-            const time = g.addedTime ? `${g.minute}+${g.addedTime}` : `${g.minute}`;
-            const player = g.player || 'Belirsiz';
-            const team = g.team === 'home' ? match.homeTeam : match.awayTeam;
+    // OYUN İHRACI (Only Red Cards - Player Ejections)
+    const redCards = sortedEvents.filter(e => e.type === 'redCard');
+    if (redCards.length > 0) {
+        report += `🟥 *OYUN İHRACI*:\n`;
+        redCards.forEach(rc => {
+            const time = rc.addedTime ? `${rc.minute}+${rc.addedTime}` : `${rc.minute}`;
+            const player = rc.player || 'Belirsiz';
+            const team = rc.team === 'home' ? match.homeTeam : match.awayTeam;
             report += ` * ${time}' ${player} (${team})\n`;
         });
-        report += `\n`;
-    }
-
-    // ALL EVENTS
-    if (sortedEvents.length > 0) {
-        report += `📝 *TÜM OYUN HAREKETLERİ*:\n`;
-        report += sortedEvents.map(e => getEventText(e, match)).join('\n');
     }
 
     return report;
