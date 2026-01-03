@@ -37,8 +37,9 @@ interface EventFormData {
 
 interface LiveMatchState {
     matchId: string;
-    startTime: number; // Unix timestamp when match started
-    pausedAt: number | null; // Elapsed seconds when paused
+    periodStartTime: number; // Unix timestamp when current period's play session started
+    periodBaseSeconds: number; // Base seconds for current period (e.g., 0 for P1, halfDuration*60 for P2)
+    accumulatedSeconds: number; // Seconds accumulated before current play session (for pause/resume)
     isRunning: boolean;
     match: Match;
     period: 1 | 2 | 3 | 4;
@@ -51,11 +52,15 @@ export default function CanliTakipScreen() {
     // Active match state
     const [activeMatch, setActiveMatch] = useState<Match | null>(null);
 
-    // Stopwatch state
+    // Stopwatch state - TIMESTAMP BASED
     const [isRunning, setIsRunning] = useState(false);
     const [elapsedSeconds, setElapsedSeconds] = useState(0);
-    const matchStartTimeRef = useRef<number | null>(null);
-    const pausedSecondsRef = useRef<number>(0);
+    // periodStartTime: when the current play session started (Date.now())
+    const periodStartTimeRef = useRef<number | null>(null);
+    // periodBaseSeconds: base offset for current period (0 for P1, halfDuration*60 for P2, etc.)
+    const periodBaseSecondsRef = useRef<number>(0);
+    // accumulatedSeconds: seconds accumulated before current play session (for pause/resume within same period)
+    const accumulatedSecondsRef = useRef<number>(0);
     const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
     const activeMatchRef = useRef<Match | null>(null);
     const isRunningRef = useRef<boolean>(false);
@@ -93,19 +98,24 @@ export default function CanliTakipScreen() {
         loadPersistedMatch();
     }, []);
 
-    // Handle app state changes (background/foreground)
+    // Handle app state changes (background/foreground) - TIMESTAMP BASED
     useEffect(() => {
         const subscription = AppState.addEventListener('change', async (nextAppState) => {
-            if (nextAppState === 'active' && activeMatchRef.current && isRunningRef.current) {
-                // App came to foreground, recalculate elapsed time
+            if (nextAppState === 'active' && activeMatchRef.current) {
+                // App came to foreground, recalculate elapsed time from stored timestamp
                 const stored = await AsyncStorage.getItem(LIVE_MATCH_STORAGE_KEY);
                 if (stored) {
                     const state: LiveMatchState = JSON.parse(stored);
-                    if (state.isRunning && state.startTime) {
+                    if (state.isRunning && state.periodStartTime) {
+                        // Recalculate elapsed time based on real wall clock
                         const now = Date.now();
-                        const realElapsed = Math.floor((now - state.startTime) / 1000);
-                        const matchElapsed = realElapsed * TEST_SPEED_MULTIPLIER;
-                        setElapsedSeconds(matchElapsed + (state.pausedAt || 0));
+                        const sessionSeconds = Math.floor((now - state.periodStartTime) / 1000) * TEST_SPEED_MULTIPLIER;
+                        const totalSeconds = state.periodBaseSeconds + state.accumulatedSeconds + sessionSeconds;
+                        setElapsedSeconds(totalSeconds);
+                        // Update refs
+                        periodStartTimeRef.current = state.periodStartTime;
+                        periodBaseSecondsRef.current = state.periodBaseSeconds;
+                        accumulatedSecondsRef.current = state.accumulatedSeconds;
                     }
                 }
             }
@@ -124,17 +134,21 @@ export default function CanliTakipScreen() {
                 const match = getMatchById(state.matchId);
                 if (match && match.status === 'live') {
                     setActiveMatch(state.match);
-                    matchStartTimeRef.current = state.startTime;
-                    pausedSecondsRef.current = state.pausedAt || 0;
+                    periodStartTimeRef.current = state.periodStartTime;
+                    periodBaseSecondsRef.current = state.periodBaseSeconds;
+                    accumulatedSecondsRef.current = state.accumulatedSeconds;
 
-                    if (state.isRunning) {
+                    if (state.isRunning && state.periodStartTime) {
+                        // Calculate current elapsed time from timestamp
                         const now = Date.now();
-                        const realElapsed = Math.floor((now - state.startTime) / 1000);
-                        const matchElapsed = realElapsed * TEST_SPEED_MULTIPLIER;
-                        setElapsedSeconds(matchElapsed + pausedSecondsRef.current);
+                        const sessionSeconds = Math.floor((now - state.periodStartTime) / 1000) * TEST_SPEED_MULTIPLIER;
+                        const totalSeconds = state.periodBaseSeconds + state.accumulatedSeconds + sessionSeconds;
+                        setElapsedSeconds(totalSeconds);
                         setIsRunning(true);
                     } else {
-                        setElapsedSeconds(state.pausedAt || 0);
+                        // Paused: show accumulated time
+                        const totalSeconds = state.periodBaseSeconds + state.accumulatedSeconds;
+                        setElapsedSeconds(totalSeconds);
                     }
                     if (state.period) setPeriod(state.period);
                     if (state.injuryTime) setInjuryTime(state.injuryTime);
@@ -147,17 +161,18 @@ export default function CanliTakipScreen() {
         }
     };
 
-    const persistLiveMatch = async (running: boolean, elapsed: number, matchToSave?: Match) => {
+    const persistLiveMatch = async (running: boolean, baseSeconds: number, accumulated: number, matchToSave?: Match, newPeriod?: 1 | 2 | 3 | 4) => {
         const matchData = matchToSave || activeMatch;
         if (!matchData) return;
         try {
             const state: LiveMatchState = {
                 matchId: matchData.id,
-                startTime: running ? Date.now() : (matchStartTimeRef.current || Date.now()),
-                pausedAt: running ? 0 : elapsed,
+                periodStartTime: running ? (periodStartTimeRef.current || Date.now()) : 0,
+                periodBaseSeconds: baseSeconds,
+                accumulatedSeconds: accumulated,
                 isRunning: running,
                 match: matchData,
-                period,
+                period: newPeriod || period,
                 injuryTime,
             };
             await AsyncStorage.setItem(LIVE_MATCH_STORAGE_KEY, JSON.stringify(state));
@@ -178,11 +193,16 @@ export default function CanliTakipScreen() {
     // Set to 1 for normal speed in production
     const TEST_SPEED_MULTIPLIER = 90;
 
-    // Stopwatch logic - simpler approach with speed multiplier
+    // Stopwatch logic - TIMESTAMP BASED: recalculate from periodStartTime on each tick
     useEffect(() => {
         if (isRunning) {
             intervalRef.current = setInterval(() => {
-                setElapsedSeconds(prev => prev + TEST_SPEED_MULTIPLIER);
+                if (periodStartTimeRef.current) {
+                    const now = Date.now();
+                    const sessionSeconds = Math.floor((now - periodStartTimeRef.current) / 1000) * TEST_SPEED_MULTIPLIER;
+                    const totalSeconds = periodBaseSecondsRef.current + accumulatedSecondsRef.current + sessionSeconds;
+                    setElapsedSeconds(totalSeconds);
+                }
             }, 1000);
         } else {
             if (intervalRef.current) {
@@ -217,17 +237,19 @@ export default function CanliTakipScreen() {
         setElapsedSeconds(0);
         setPeriod(1);
         setInjuryTime(0);
-        matchStartTimeRef.current = null;
-        pausedSecondsRef.current = 0;
+        periodStartTimeRef.current = null;
+        periodBaseSecondsRef.current = 0;
+        accumulatedSecondsRef.current = 0;
         setIsRunning(false);
         // Pass the new match directly to avoid race condition
-        persistLiveMatch(false, 0, newMatch);
+        persistLiveMatch(false, 0, 0, newMatch, 1);
     };
 
     const handleAddInjuryTime = (minutes: number) => {
         setInjuryTime(minutes);
         setShowInjuryModal(false);
-        persistLiveMatch(isRunning, elapsedSeconds);
+        // Persist current state with same values
+        persistLiveMatch(isRunning, periodBaseSecondsRef.current, accumulatedSecondsRef.current);
     };
 
     // Get the half duration for the current match from category settings
@@ -263,13 +285,15 @@ export default function CanliTakipScreen() {
                     {
                         text: 'Evet, Başlat',
                         onPress: () => {
+                            const newBaseSeconds = halfDuration * 60;
                             setPeriod(2);
                             setInjuryTime(0);
-                            setElapsedSeconds(halfDuration * 60); // Dynamic half duration
-                            pausedSecondsRef.current = halfDuration * 60;
-                            matchStartTimeRef.current = null;
+                            setElapsedSeconds(newBaseSeconds);
+                            periodBaseSecondsRef.current = newBaseSeconds;
+                            accumulatedSecondsRef.current = 0;
+                            periodStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, halfDuration * 60);
+                            persistLiveMatch(false, newBaseSeconds, 0, undefined, 2);
                         }
                     }
                 ]
@@ -283,13 +307,15 @@ export default function CanliTakipScreen() {
                     {
                         text: 'Evet, Başlat',
                         onPress: () => {
+                            const newBaseSeconds = fullMatchDuration * 60;
                             setPeriod(3);
                             setInjuryTime(0);
-                            setElapsedSeconds(fullMatchDuration * 60); // Full match duration
-                            pausedSecondsRef.current = fullMatchDuration * 60;
-                            matchStartTimeRef.current = null;
+                            setElapsedSeconds(newBaseSeconds);
+                            periodBaseSecondsRef.current = newBaseSeconds;
+                            accumulatedSecondsRef.current = 0;
+                            periodStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, fullMatchDuration * 60);
+                            persistLiveMatch(false, newBaseSeconds, 0, undefined, 3);
                         }
                     }
                 ]
@@ -303,13 +329,15 @@ export default function CanliTakipScreen() {
                     {
                         text: 'Evet, Başlat',
                         onPress: () => {
+                            const newBaseSeconds = firstExtraEnd * 60;
                             setPeriod(4);
                             setInjuryTime(0);
-                            setElapsedSeconds(firstExtraEnd * 60); // First extra time end
-                            pausedSecondsRef.current = firstExtraEnd * 60;
-                            matchStartTimeRef.current = null;
+                            setElapsedSeconds(newBaseSeconds);
+                            periodBaseSecondsRef.current = newBaseSeconds;
+                            accumulatedSecondsRef.current = 0;
+                            periodStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, firstExtraEnd * 60);
+                            persistLiveMatch(false, newBaseSeconds, 0, undefined, 4);
                         }
                     }
                 ]
@@ -317,15 +345,22 @@ export default function CanliTakipScreen() {
         }
     };
 
-    // Toggle stopwatch
+    // Toggle stopwatch - TIMESTAMP BASED
     const toggleStopwatch = () => {
         const newRunning = !isRunning;
         if (newRunning) {
-            matchStartTimeRef.current = Date.now();
-            persistLiveMatch(true, elapsedSeconds);
+            // Starting: record the current timestamp
+            periodStartTimeRef.current = Date.now();
+            persistLiveMatch(true, periodBaseSecondsRef.current, accumulatedSecondsRef.current);
         } else {
-            pausedSecondsRef.current = elapsedSeconds;
-            persistLiveMatch(false, elapsedSeconds);
+            // Pausing: calculate how much time has passed in this session and add to accumulated
+            if (periodStartTimeRef.current) {
+                const now = Date.now();
+                const sessionSeconds = Math.floor((now - periodStartTimeRef.current) / 1000) * TEST_SPEED_MULTIPLIER;
+                accumulatedSecondsRef.current += sessionSeconds;
+            }
+            periodStartTimeRef.current = null;
+            persistLiveMatch(false, periodBaseSecondsRef.current, accumulatedSecondsRef.current);
         }
         setIsRunning(newRunning);
     };
@@ -516,7 +551,9 @@ export default function CanliTakipScreen() {
             await clearPersistedMatch();
             setActiveMatch(null);
             setElapsedSeconds(0);
-            matchStartTimeRef.current = null;
+            periodStartTimeRef.current = null;
+            periodBaseSecondsRef.current = 0;
+            accumulatedSecondsRef.current = 0;
         } catch (error) {
             console.error('Error ending match:', error);
             Alert.alert('Hata', 'Maç bitirilemedi');
@@ -574,7 +611,9 @@ export default function CanliTakipScreen() {
                         setIsRunning(false);
                         setActiveMatch(null);
                         setElapsedSeconds(0);
-                        matchStartTimeRef.current = null;
+                        periodStartTimeRef.current = null;
+                        periodBaseSecondsRef.current = 0;
+                        accumulatedSecondsRef.current = 0;
                     },
                 },
             ]
