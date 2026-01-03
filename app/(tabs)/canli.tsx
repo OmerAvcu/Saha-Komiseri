@@ -46,7 +46,7 @@ interface LiveMatchState {
 }
 
 export default function CanliTakipScreen() {
-    const { getScheduledMatches, getLiveMatches, getMatchById, updateMatch, isLoading, theme, isDarkMode } = useAppContext();
+    const { getScheduledMatches, getLiveMatches, getMatchById, updateMatch, isLoading, theme, isDarkMode, settings } = useAppContext();
 
     // Active match state
     const [activeMatch, setActiveMatch] = useState<Match | null>(null);
@@ -230,11 +230,34 @@ export default function CanliTakipScreen() {
         persistLiveMatch(isRunning, elapsedSeconds);
     };
 
+    // Get the half duration for the current match from category settings
+    const getHalfDuration = useCallback((): number => {
+        if (!activeMatch || !settings?.categories) return 45; // Default to 45
+        const category = settings.categories.find(
+            cat => cat.name === activeMatch.category || cat.id === activeMatch.category
+        );
+        return category?.halfDuration || 45;
+    }, [activeMatch, settings]);
+
+    // Get extra time half duration (default 15 minutes)
+    const getExtraTimeHalfDuration = useCallback((): number => {
+        if (!activeMatch || !settings?.categories) return 15; // Default to 15
+        const category = settings.categories.find(
+            cat => cat.name === activeMatch.category || cat.id === activeMatch.category
+        );
+        return category?.extraTimeHalfDuration || 15;
+    }, [activeMatch, settings]);
+
     const handleNextPeriod = () => {
+        const halfDuration = getHalfDuration();
+        const fullMatchDuration = halfDuration * 2; // e.g., 70 for U16 (35*2), 90 for professional (45*2)
+        const extraTimeHalf = getExtraTimeHalfDuration();
+        const firstExtraEnd = fullMatchDuration + extraTimeHalf; // e.g., 105 for professional
+
         if (period === 1) {
             Alert.alert(
                 '2. Devreye Geç',
-                'İkinci devreye geçmek istediğinize emin misiniz? Süre 45:00\'dan devam edecek.',
+                `İkinci devreye geçmek istediğinize emin misiniz? Süre ${halfDuration}:00'dan devam edecek.`,
                 [
                     { text: 'İptal', style: 'cancel' },
                     {
@@ -242,11 +265,11 @@ export default function CanliTakipScreen() {
                         onPress: () => {
                             setPeriod(2);
                             setInjuryTime(0);
-                            setElapsedSeconds(45 * 60); // Reset to 45 mins
-                            pausedSecondsRef.current = 45 * 60;
+                            setElapsedSeconds(halfDuration * 60); // Dynamic half duration
+                            pausedSecondsRef.current = halfDuration * 60;
                             matchStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, 45 * 60);
+                            persistLiveMatch(false, halfDuration * 60);
                         }
                     }
                 ]
@@ -254,7 +277,7 @@ export default function CanliTakipScreen() {
         } else if (period === 2) {
             Alert.alert(
                 '1. Uzatma Devresine Geç',
-                'Uzatma devrelerini başlatmak istediğinize emin misiniz? Süre 90:00\'dan devam edecek.',
+                `Uzatma devrelerini başlatmak istediğinize emin misiniz? Süre ${fullMatchDuration}:00'dan devam edecek.`,
                 [
                     { text: 'İptal', style: 'cancel' },
                     {
@@ -262,11 +285,11 @@ export default function CanliTakipScreen() {
                         onPress: () => {
                             setPeriod(3);
                             setInjuryTime(0);
-                            setElapsedSeconds(90 * 60); // Reset to 90 mins
-                            pausedSecondsRef.current = 90 * 60;
+                            setElapsedSeconds(fullMatchDuration * 60); // Full match duration
+                            pausedSecondsRef.current = fullMatchDuration * 60;
                             matchStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, 90 * 60);
+                            persistLiveMatch(false, fullMatchDuration * 60);
                         }
                     }
                 ]
@@ -274,7 +297,7 @@ export default function CanliTakipScreen() {
         } else if (period === 3) {
             Alert.alert(
                 '2. Uzatma Devresine Geç',
-                'İkinci uzatma devresine geçmek istediğinize emin misiniz? Süre 105:00\'dan devam edecek.',
+                `İkinci uzatma devresine geçmek istediğinize emin misiniz? Süre ${firstExtraEnd}:00'dan devam edecek.`,
                 [
                     { text: 'İptal', style: 'cancel' },
                     {
@@ -282,11 +305,11 @@ export default function CanliTakipScreen() {
                         onPress: () => {
                             setPeriod(4);
                             setInjuryTime(0);
-                            setElapsedSeconds(105 * 60); // Reset to 105 mins
-                            pausedSecondsRef.current = 105 * 60;
+                            setElapsedSeconds(firstExtraEnd * 60); // First extra time end
+                            pausedSecondsRef.current = firstExtraEnd * 60;
                             matchStartTimeRef.current = null;
                             setIsRunning(false);
-                            persistLiveMatch(false, 105 * 60);
+                            persistLiveMatch(false, firstExtraEnd * 60);
                         }
                     }
                 ]
@@ -338,19 +361,25 @@ export default function CanliTakipScreen() {
                 playerIn: formData.playerIn?.trim() || undefined,
             };
 
-            // Calculate added time (injury time logic)
-            if (period === 1 && minute > 45) {
-                newEvent.minute = 45;
-                newEvent.addedTime = minute - 45;
-            } else if (period === 2 && minute > 90) {
-                newEvent.minute = 90;
-                newEvent.addedTime = minute - 90;
-            } else if (period === 3 && minute > 105) {
-                newEvent.minute = 105;
-                newEvent.addedTime = minute - 105;
-            } else if (period === 4 && minute > 120) {
-                newEvent.minute = 120;
-                newEvent.addedTime = minute - 120;
+            // Calculate added time (injury time logic) with dynamic thresholds
+            const halfDur = getHalfDuration();
+            const fullDur = halfDur * 2;
+            const extraHalf = getExtraTimeHalfDuration();
+            const firstExtraEnd = fullDur + extraHalf;
+            const secondExtraEnd = fullDur + extraHalf * 2;
+
+            if (period === 1 && minute > halfDur) {
+                newEvent.minute = halfDur;
+                newEvent.addedTime = minute - halfDur;
+            } else if (period === 2 && minute > fullDur) {
+                newEvent.minute = fullDur;
+                newEvent.addedTime = minute - fullDur;
+            } else if (period === 3 && minute > firstExtraEnd) {
+                newEvent.minute = firstExtraEnd;
+                newEvent.addedTime = minute - firstExtraEnd;
+            } else if (period === 4 && minute > secondExtraEnd) {
+                newEvent.minute = secondExtraEnd;
+                newEvent.addedTime = minute - secondExtraEnd;
             }
 
             // Update scores if goal
@@ -648,12 +677,19 @@ export default function CanliTakipScreen() {
                 <View style={styles.centerSection}>
                     <Text style={[
                         styles.stopwatch,
-                        (period === 1 && elapsedSeconds > 45 * 60) ||
-                            (period === 2 && elapsedSeconds > 90 * 60) ||
-                            (period === 3 && elapsedSeconds > 105 * 60) ||
-                            (period === 4 && elapsedSeconds > 120 * 60)
-                            ? { color: '#fb923c' } // Orange for injury time
-                            : {}
+                        (() => {
+                            const halfDur = getHalfDuration();
+                            const fullDur = halfDur * 2;
+                            const extraHalf = getExtraTimeHalfDuration();
+                            const firstExtraEnd = fullDur + extraHalf;
+                            const secondExtraEnd = fullDur + extraHalf * 2;
+                            return (period === 1 && elapsedSeconds > halfDur * 60) ||
+                                (period === 2 && elapsedSeconds > fullDur * 60) ||
+                                (period === 3 && elapsedSeconds > firstExtraEnd * 60) ||
+                                (period === 4 && elapsedSeconds > secondExtraEnd * 60)
+                                ? { color: '#fb923c' } // Orange for injury time
+                                : {};
+                        })()
                     ]}>
                         {formatTime(elapsedSeconds)}
                         {injuryTime > 0 && (
