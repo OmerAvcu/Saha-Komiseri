@@ -1,41 +1,104 @@
-# SahaKomiseri - Futbol Hakem Yönetim Uygulaması
+# ⚽ Saha Komiseri
 
-React Native + Expo ile geliştirilmiş mobil futbol hakem yönetim uygulaması.
+**Futbol müsabakalarını profesyonelce takip edin ve raporlayın.**
 
-## Teknolojiler
+Saha Komiseri, futbol hakemlerinin ve maç komiserlerin sahada kullanması için tasarlanmış kapsamlı bir mobil uygulamadır. Canlı maç takibi, olay kaydı, hakem kadrosu yönetimi ve WhatsApp üzerinden hızlı rapor paylaşımı özelliklerini bir arada sunar.
+
+---
+
+## 📱 Özellikler
+
+### 🎯 Canlı Maç Takibi
+- **Gerçek zamanlı kronometre** - Timestamp tabanlı, telefon kilitlense bile doğru çalışır
+- **Dinamik devre süreleri** - Kategoriye göre otomatik süre ayarlama (U16: 40dk, U19: 45dk, vb.)
+- **Olay kaydı** - Gol ⚽, Sarı Kart 🟨, Kırmızı Kart 🟥, Oyuncu Değişikliği 🔄
+- **Uzatma devresi desteği** - 1. ve 2. uzatma devreleri dahil
+
+### 📋 Maç Yönetimi
+- **Maç planlama** - Tarih, saat, stadyum, lig ve kategori bilgileri
+- **Hakem kadrosu** - Orta hakem, yardımcı hakemler, 4. hakem, gözlemci ve temsilci
+- **Esame fotoğrafları** - Takım listelerinin fotoğraflarını ekleyin ve kaydedin
+
+### 📊 Raporlama
+- **WhatsApp paylaşımı** - Tek tıkla profesyonel maç raporu oluşturun
+- **Detaylı maç geçmişi** - Tamamlanan maçları görüntüleyin ve analiz edin
+- **Oyun ihracı listesi** - Kırmızı kart raporları
+
+### ⚙️ Ayarlar
+- **Kategori yönetimi** - Özel kategoriler ekleyin (devre süresi, değişiklik limiti)
+- **Lig yönetimi** - Ligleri düzenleyin
+- **Veri yedekleme** - JSON formatında dışa/içe aktarma
+- **Karanlık mod** - Göz yorgunluğunu azaltın
+
+---
+
+## 🛠️ Teknolojiler
 
 | Teknoloji | Açıklama |
 |-----------|----------|
-| Expo Router | Dosya bazlı navigasyon |
-| TypeScript | Tip güvenliği |
-| React Native Paper | Material Design UI |
-| AsyncStorage | Kalıcı veri depolama |
-| Context API | Global state yönetimi |
+| **React Native** | Cross-platform mobil geliştirme |
+| **Expo** | Geliştirme ve build araçları |
+| **Expo Router** | Dosya tabanlı navigasyon |
+| **React Native Paper** | Material Design UI bileşenleri |
+| **AsyncStorage** | Yerel veri depolama |
+| **TypeScript** | Tip güvenli kod |
 
-## Özellikler
+---
 
-- **Maçlar**: Planlanan maçları listele ve yönet
-- **Canlı Takip**: Aktif maçları canlı takip et
-- **Sonuçlar**: Tamamlanan maçların arşivi
-- **Ayarlar**: Kategori kuralları ve uygulama ayarları
+## 🚀 Kurulum
 
-## Kurulum
+### Gereksinimler
+- Node.js 18+
+- npm veya yarn
+- Expo CLI
+- Android Studio (Android için) veya Xcode (iOS için)
+
+### Adımlar
 
 ```bash
-# Projeyi klonla
-git clone <repo-url>
-cd SahaKomiseri
+# Repoyu klonlayın
+git clone https://github.com/OmerAvcu/Saha-Komiseri.git
+cd Saha-Komiseri
 
-# Bağımlılıkları yükle
+# Bağımlılıkları yükleyin
 npm install
 
-# Uygulamayı başlat
+# Geliştirme sunucusunu başlatın
 npx expo start
 ```
 
-## Bağımlılıklar
+### Build Alma
 
-- react-native-paper
-- @react-native-async-storage/async-storage
-- uuid
-- @expo/vector-icons
+```bash
+# Android Preview Build
+eas build --platform android --profile preview
+
+# Android Production Build
+eas build --platform android --profile production
+```
+
+---
+
+## 📁 Proje Yapısı
+
+```
+SahaKomiseri/
+├── app/                    # Ekranlar (Expo Router)
+│   ├── (tabs)/             # Tab navigasyonu
+│   │   ├── index.tsx       # Ana sayfa (Maçlar)
+│   │   ├── canli.tsx       # Canlı takip
+│   │   ├── sonuclar.tsx    # Sonuçlar
+│   │   └── ayarlar.tsx     # Ayarlar
+│   ├── match-form.tsx      # Maç oluşturma/düzenleme
+│   ├── match-detail.tsx    # Maç detayları
+│   ├── categories.tsx      # Kategori yönetimi
+│   └── leagues.tsx         # Lig yönetimi
+├── components/             # Yeniden kullanılabilir bileşenler
+├── context/                # React Context (AppContext)
+├── services/               # Veri servisleri (storage)
+├── types/                  # TypeScript tip tanımları
+├── constants/              # Sabitler ve tema
+└── assets/                 # Görseller ve ikonlar
+```
+
+---
